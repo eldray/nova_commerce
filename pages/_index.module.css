@@ -281,3 +281,35 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.emptyIcon {
+  color: var(--muted-foreground);
+  margin-bottom: 1rem;
+}
+
+.emptyState h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+}
+
+.emptyState p {
+  color: var(--muted-foreground);
+  margin-bottom: 1.5rem;
+}
+
+/* Card Skeleton */
+.cardSkeleton {
+  height: 400px;
+  border-radius: var(--radius-lg);
+}

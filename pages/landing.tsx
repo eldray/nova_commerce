@@ -112,21 +112,27 @@ export default function LandingPage() {
           </div>
           <h1 className="hero-title">
             Build Your Online Store
-            <span className="highlight"> in Minutes</span>
+            <span className="highlight"> or Shop Amazing Products</span>
           </h1>
           <p className="hero-subtitle">
-            The all-in-one platform for Ghanaian businesses. Accept Mobile Money, 
-            manage inventory, and grow your sales with beautiful, fast storefronts.
+            Whether you're a business ready to sell online or a customer looking for unique Ghanaian products, 
+            Nova Commerce connects you. Accept Mobile Money, manage inventory, and grow your sales with beautiful, fast storefronts.
           </p>
-          <div className="hero-cta">
-            <Link to="/register">
+          <div className="hero-buttons">
+            <Link to="/register?type=merchant">
               <Button variant="primary" size="large" className="cta-button">
-                Start Your Free Trial
+                Start Selling Today
                 <RocketLaunchIcon className="button-icon" />
               </Button>
             </Link>
-            <p className="trial-info">No credit card required • 14-day free trial</p>
+            <Link to="/shop">
+              <Button variant="secondary" size="large" className="cta-button-secondary">
+                Browse Stores & Shop
+                <SparklesIcon className="button-icon" />
+              </Button>
+            </Link>
           </div>
+          <p className="trial-info">No credit card required • 14-day free trial for merchants • Free shopping for customers</p>
           <div className="hero-stats">
             {stats.map((stat, index) => (
               <div key={index} className="stat-item">
@@ -220,19 +226,24 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section className="cta-section">
         <div className="cta-content">
-          <h2 className="cta-title">Ready to Grow Your Business?</h2>
+          <h2 className="cta-title">Ready to Get Started?</h2>
           <p className="cta-subtitle">
-            Join hundreds of Ghanaian businesses already selling with Nova Commerce
+            Join hundreds of Ghanaian businesses already selling with Nova Commerce, or discover amazing products from local stores
           </p>
-          <div className="cta-buttons">
-            <Link to="/register">
+          <div className="hero-buttons">
+            <Link to="/register?type=merchant">
               <Button variant="primary" size="large">
-                Start Your Free Trial
+                Start Selling Now
               </Button>
             </Link>
-            <Link to="/demo">
+            <Link to="/shop">
               <Button variant="secondary" size="large">
-                View Demo Store
+                Shop as Customer
+              </Button>
+            </Link>
+            <Link to="/customer-home">
+              <Button variant="outline" size="large">
+                View Customer Dashboard
               </Button>
             </Link>
           </div>
