@@ -1,0 +1,27 @@
+import { z } from "zod";
+import superjson from "superjson";
+
+export const schema = z.object({
+  logoUrl: z.string().url().optional().or(z.literal("")),
+  brandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  tagline: z.string().max(100).optional(),
+});
+
+export type InputType = z.infer<typeof schema>;
+export type OutputType = { success: boolean };
+
+export async function updateStore(input: InputType): Promise<OutputType> {
+  const res = await fetch("/api/settings/store-update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: superjson.stringify(input),
+  });
+
+  const json = superjson.parse(await res.text());
+
+  if (!res.ok) {
+    throw new Error(json.error || "Failed to update store");
+  }
+
+  return json as OutputType;
+}

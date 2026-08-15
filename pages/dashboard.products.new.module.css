@@ -53,3 +53,94 @@
     font-size: 0.875rem;
     margin-bottom: var(--spacing-4);
 }
+/* Image Upload Styles */
+.imageUploadSection {
+    margin-top: var(--spacing-2);
+}
+
+.imagePreview {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.imagePreview img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+}
+
+.removeImageButton {
+    position: absolute;
+    top: var(--spacing-2);
+    right: var(--spacing-2);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.removeImageButton:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.removeImageButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.uploadPlaceholder {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-8);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: color-mix(in oklch, var(--primary) 3%, transparent);
+}
+
+.uploadPlaceholder:hover {
+    border-color: var(--primary);
+    background: color-mix(in oklch, var(--primary) 6%, transparent);
+}
+
+.uploadIcon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-3);
+    opacity: 0.6;
+}
+
+.uploadText {
+    font-size: 0.95rem;
+    color: var(--foreground);
+    margin: 0 0 var(--spacing-1);
+    font-weight: 500;
+}
+
+.uploadHint {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    margin: 0;
+}
+
+.fileInput {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.fileInput:disabled {
+    cursor: not-allowed;
+}

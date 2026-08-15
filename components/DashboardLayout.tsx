@@ -5,6 +5,7 @@ import {
   Package,
   ShoppingCart,
   Users,
+  UserPlus,
   Tag,
   Truck,
   BarChart3,
@@ -22,10 +23,19 @@ const NAV_ITEMS = [
   { label: "Products", to: "/dashboard/products", icon: Package },
   { label: "Orders", to: "/dashboard/orders", icon: ShoppingCart },
   { label: "Customers", to: "/dashboard/customers", icon: Users },
+  { label: "Staff", to: "/dashboard/staff", icon: UserPlus },
   { label: "Coupons", to: "/dashboard/coupons", icon: Tag },
   { label: "Delivery", to: "/dashboard/delivery", icon: Truck },
   { label: "Analytics", to: "/dashboard/analytics", icon: BarChart3 },
-  { label: "Settings", to: "/dashboard/settings", icon: Settings },
+  { 
+    label: "Settings", 
+    to: "/dashboard/settings", 
+    icon: Settings,
+    children: [
+      { label: "Store Settings", to: "/dashboard/settings/store" },
+      { label: "Payment Settings", to: "/dashboard/settings/payments" },
+    ]
+  },
 ];
 
 interface DashboardLayoutProps {

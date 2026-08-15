@@ -17,6 +17,7 @@ import { Button } from "../components/Button";
 import { Spinner } from "../components/Spinner";
 import { useMyStores } from "../helpers/useMyStores";
 import { useCreateProduct } from "../helpers/useCreateProduct";
+import ProductImageUploader from "../components/ProductImageUploader";
 import styles from "./dashboard.products.new.module.css";
 
 const formSchema = z.object({
@@ -33,6 +34,8 @@ export default function DashboardProductsNewPage() {
     const tenantId = storesData?.stores[0]?.tenantId;
     const createProduct = useCreateProduct();
     const [error, setError] = useState<string | null>(null);
+    const [images, setImages] = useState<string[]>([]);
+    const [primaryImage, setPrimaryImage] = useState<string | undefined>();
 
     const form = useForm({
         schema: formSchema,
@@ -52,6 +55,8 @@ export default function DashboardProductsNewPage() {
                 stockQuantity: data.stockQuantity ? Number(data.stockQuantity) : 0,
                 lowStockThreshold: 5,
                 status: "draft",
+                images: images.length > 0 ? images : undefined,
+                primaryImage: primaryImage || undefined,
             });
             navigate("/dashboard/products");
         } catch (err) {
@@ -71,6 +76,20 @@ export default function DashboardProductsNewPage() {
                 <Form {...form}>
                     {error && <div className={styles.errorMessage}>{error}</div>}
                     <form onSubmit={form.handleSubmit(handleSubmit)} className={styles.form}>
+                        {/* Product Image Upload */}
+                        <FormItem name="images">
+                            <FormLabel>Product Images</FormLabel>
+                            <ProductImageUploader
+                                images={images}
+                                primaryImage={primaryImage}
+                                onImagesChange={setImages}
+                                onPrimaryChange={setPrimaryImage}
+                                folder="products"
+                                maxImages={10}
+                            />
+                            <FormMessage />
+                        </FormItem>
+
                         <FormItem name="name">
                             <FormLabel>Product name</FormLabel>
                             <FormControl>

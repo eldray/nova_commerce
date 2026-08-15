@@ -1,7 +1,8 @@
 import React from "react";
 import { Helmet } from "react-helmet";
+import { Link } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
-import { useMyStores } from "../helpers/useMyStores";
+import { useMyStores } from "../helpers/useStores";
 import { useOrders } from "../helpers/useOrders";
 import { Badge } from "../components/Badge";
 import { Skeleton } from "../components/Skeleton";
@@ -73,16 +74,18 @@ export default function DashboardOrdersPage() {
                         </thead>
                         <tbody>
                             {data.orders.map((o) => (
-                                <tr key={o.id}>
+                                <tr key={o.id} className={styles.orderRow}>
                                     <td>
-                                        <div className={styles.orderNumber}>{o.orderNumber}</div>
-                                        <div className={styles.orderDate}>
-                                            {new Date(o.createdAt).toLocaleDateString("en-GH", {
-                                                day: "numeric",
-                                                month: "short",
-                                                year: "numeric",
-                                            })}
-                                        </div>
+                                        <Link to={`/dashboard/orders/${o.id}`} className={styles.orderLink}>
+                                            <div className={styles.orderNumber}>{o.orderNumber}</div>
+                                            <div className={styles.orderDate}>
+                                                {new Date(o.createdAt).toLocaleDateString("en-GH", {
+                                                    day: "numeric",
+                                                    month: "short",
+                                                    year: "numeric",
+                                                })}
+                                            </div>
+                                        </Link>
                                     </td>
                                     <td>{o.recipientName}</td>
                                     <td className={styles.mutedCell}>{o.itemCount}</td>

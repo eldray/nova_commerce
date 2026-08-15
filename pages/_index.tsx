@@ -5,6 +5,7 @@ import { ArrowRight, Truck, ShieldCheck, RotateCcw } from "lucide-react";
 import { Button } from "../components/Button";
 import { ProductCard, ProductCardData } from "../components/ProductCard";
 import styles from "./_index.module.css";
+import { useAuth } from "../helpers/useAuth";
 
 const categories = [
   { name: "Dresses", slug: "dresses", image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80" },
@@ -34,6 +35,8 @@ const testimonials = [
 ];
 
 export default function IndexPage() {
+  const { user } = useAuth();
+
   return (
     <>
       <Helmet>
@@ -43,6 +46,26 @@ export default function IndexPage() {
           content="Shop contemporary African-inspired fashion, footwear and accessories. Nationwide delivery across Ghana, pay by Mobile Money or card."
         />
       </Helmet>
+
+      {/* Top bar with auth links */}
+      <div className={styles.topBar}>
+        <div className={styles.topBarContent}>
+          <span className={styles.topBarText}>Free delivery on orders over GH₵500</span>
+          <div className={styles.topBarActions}>
+            {user ? (
+              <>
+                <span className={styles.topBarUser}>Hi, {user.displayName}</span>
+                <Link to="/dashboard" className={styles.topBarLink}>Dashboard</Link>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className={styles.topBarLink}>Log in</Link>
+                <Link to="/register" className={styles.topBarLink}>Sign up</Link>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
 
       <section className={styles.hero}>
         <div className={styles.heroContent}>
