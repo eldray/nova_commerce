@@ -1,0 +1,217 @@
+.dashboardCustomersWrapper {
+    min-height: 100%;
+    background-color: #f9fafb;
+}
+
+.dashboardCustomersHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.dashboardCustomersTitle {
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.dashboardCustomersSubtitle {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 4px 0 0 0;
+}
+
+.dashboardCustomersSearch {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.dashboardCustomersSearchInput {
+    flex: 1;
+    max-width: 400px;
+    padding: 10px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    background-color: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dashboardCustomersSearchInput:focus {
+    outline: none;
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.dashboardCustomersTableCard {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.dashboardCustomersTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.dashboardCustomersTable th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+}
+
+.dashboardCustomersTable td {
+    padding: 16px;
+    font-size: 14px;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+
+.dashboardCustomersTable tr:last-child td {
+    border-bottom: none;
+}
+
+.dashboardCustomersTable tr:hover {
+    background-color: #f9fafb;
+}
+
+.dashboardCustomerLink {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #111827;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.dashboardCustomerLink:hover {
+    color: #7c3aed;
+}
+
+.dashboardCustomerName {
+    font-weight: 600;
+    color: #111827;
+}
+
+.dashboardCustomerEmail {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.dashboardCustomerPhone {
+    color: #6b7280;
+}
+
+.dashboardMutedCell {
+    color: #6b7280;
+}
+
+.dashboardTotalCell {
+    font-weight: 600;
+    color: #111827;
+}
+
+.dashboardBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.dashboardEmptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dashboardEmptyIcon {
+    color: #d1d5db;
+    margin-bottom: 16px;
+}
+
+.dashboardEmptyTitle {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 8px 0;
+}
+
+.dashboardEmptySubtitle {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.dashboardErrorText {
+    padding: 20px;
+    color: #dc2626;
+    font-size: 14px;
+}
+
+.dashboardRowSkeleton {
+    height: 60px;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.dashboardPagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+}
+
+.dashboardPaginationInfo {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.dashboardPaginationButtons {
+    display: flex;
+    gap: 8px;
+}
+
+@media (max-width: 768px) {
+    .dashboardCustomersHeader {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .dashboardCustomersSearch {
+        flex-direction: column;
+    }
+
+    .dashboardCustomersSearchInput {
+        max-width: 100%;
+    }
+
+    .dashboardCustomersTable {
+        font-size: 13px;
+    }
+
+    .dashboardCustomersTable th,
+    .dashboardCustomersTable td {
+        padding: 12px;
+    }
+}

@@ -1,0 +1,229 @@
+.dashboardCustomerDetailWrapper {
+    min-height: 100%;
+    background-color: #f9fafb;
+}
+
+.dashboardCustomerDetailHeader {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.dashboardCustomerDetailBackLink {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.dashboardCustomerDetailBackLink:hover {
+    color: #111827;
+    background-color: #fff;
+}
+
+.dashboardCustomerDetailTitle {
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.dashboardCustomerDetailGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.dashboardCustomerDetailCard {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+}
+
+.dashboardCustomerDetailCardTitle {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dashboardCustomerDetailInfoGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.dashboardCustomerDetailInfoItem {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dashboardCustomerDetailInfoLabel {
+    font-size: 12px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.dashboardCustomerDetailInfoValue {
+    font-size: 14px;
+    color: #111827;
+    font-weight: 500;
+}
+
+.dashboardCustomerDetailSection {
+    margin-top: 24px;
+}
+
+.dashboardCustomerDetailSectionTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 12px 0;
+}
+
+.dashboardCustomerDetailAddressesList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dashboardCustomerDetailAddressItem {
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #f9fafb;
+}
+
+.dashboardCustomerDetailAddressType {
+    font-size: 12px;
+    font-weight: 600;
+    color: #7c3aed;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.dashboardCustomerDetailAddressText {
+    font-size: 13px;
+    color: #374151;
+    line-height: 1.5;
+}
+
+.dashboardCustomerDetailAddressDefault {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #059669;
+    font-weight: 500;
+    margin-top: 8px;
+}
+
+.dashboardCustomerDetailOrdersTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+
+.dashboardCustomerDetailOrdersTable th {
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.dashboardCustomerDetailOrdersTable td {
+    padding: 12px;
+    font-size: 13px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.dashboardCustomerDetailOrdersTable tr:last-child td {
+    border-bottom: none;
+}
+
+.dashboardCustomerDetailOrdersTable tr:hover {
+    background-color: #f9fafb;
+}
+
+.dashboardCustomerDetailOrderLink {
+    color: #7c3aed;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.dashboardCustomerDetailOrderLink:hover {
+    text-decoration: underline;
+}
+
+.dashboardCustomerDetailBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.dashboardCustomerDetailErrorState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dashboardCustomerDetailErrorState h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 8px 0;
+}
+
+.dashboardCustomerDetailErrorState p {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 0 16px 0;
+}
+
+@media (max-width: 1024px) {
+    .dashboardCustomerDetailGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboardCustomerDetailInfoGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboardCustomerDetailOrdersTable {
+        font-size: 12px;
+    }
+
+    .dashboardCustomerDetailOrdersTable th,
+    .dashboardCustomerDetailOrdersTable td {
+        padding: 8px;
+    }
+}

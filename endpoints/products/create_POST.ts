@@ -1,5 +1,4 @@
 import { schema, OutputType } from "./create_POST.schema";
-import superjson from "superjson";
 import { db } from "../../helpers/db";
 import { getServerUserSession } from "../../helpers/getServerUserSession";
 import { requireTenantPermission } from "../../helpers/tenantContext";
@@ -19,26 +18,41 @@ export async function handle(request: Request) {
     try {
         const user = await getServerUserSession(request);
         if (!user) {
-            return new Response(superjson.stringify({ error: "Unauthorized" }), { status: 401 });
+            return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+                status: 401,
+                headers: { "Content-Type": "application/json" }
+            });
         }
-        const json = superjson.parse(await request.text());
+        
+        const json = await request.json();
         const input = schema.parse(json);
 
         // Enforces tenant isolation + RBAC: throws unless the caller is a member of
-        // input.tenantId with products.create permission.
-        await requireTenantPermission(user.id, input.tenantId, "products.create");
+        // the user's current tenant with products.create permission.
+        const tenantId = user.tenantId;
+        if (!tenantId) {
+            return new Response(JSON.stringify({ error: "No active store selected" }), { 
+                status: 400,
+                headers: { "Content-Type": "application/json" }
+            });
+        }
+        
+        await requireTenantPermission(user.id, tenantId, "products.create");
 
         if (input.categoryId) {
             const category = await db
                 .selectFrom("categories")
                 .select("id")
                 .where("id", "=", input.categoryId)
-                .where("tenantId", "=", input.tenantId)
+                .where("tenantId", "=", tenantId)
                 .executeTakeFirst();
             if (!category) {
                 return new Response(
-                    superjson.stringify({ error: "Category not found for this store" }),
-                    { status: 400 }
+                    JSON.stringify({ error: "Category not found for this store" }),
+                    { 
+                        status: 400,
+                        headers: { "Content-Type": "application/json" }
+                    }
                 );
             }
         }
@@ -50,7 +64,7 @@ export async function handle(request: Request) {
             await db
                 .selectFrom("products")
                 .select("id")
-                .where("tenantId", "=", input.tenantId)
+                .where("tenantId", "=", tenantId)
                 .where("slug", "=", slug)
                 .executeTakeFirst()
         ) {
@@ -62,7 +76,7 @@ export async function handle(request: Request) {
             const product = await trx
                 .insertInto("products")
                 .values({
-                    tenantId: input.tenantId,
+                    tenantId: tenantId,
                     categoryId: input.categoryId ?? null,
                     name: input.name,
                     slug,
@@ -73,14 +87,34 @@ export async function handle(request: Request) {
                     salePrice: input.salePrice ? input.salePrice.toFixed(2) : null,
                     stockQuantity: input.stockQuantity,
                     lowStockThreshold: input.lowStockThreshold,
+                    images: input.images && input.images.length > 0 ? JSON.stringify(input.images) : null,
+                    primaryImage: input.primaryImage ?? null,
                 })
                 .returning(["id", "slug"])
                 .executeTakeFirstOrThrow();
 
-            if (input.imageUrl) {
+            // Insert multiple product images if provided
+            if (input.images && input.images.length > 0) {
+                const imageInserts = input.images.map((url, index) => ({
+                    productId: product.id,
+                    url: url,
+                    position: index,
+                    isPrimary: index === 0,
+                }));
+                
                 await trx
                     .insertInto("productImages")
-                    .values({ productId: product.id, url: input.imageUrl, position: 0 })
+                    .values(imageInserts)
+                    .execute();
+            } else if (input.primaryImage) {
+                await trx
+                    .insertInto("productImages")
+                    .values({ 
+                        productId: product.id, 
+                        url: input.primaryImage, 
+                        position: 0,
+                        isPrimary: true 
+                    })
                     .execute();
             }
 
@@ -88,7 +122,7 @@ export async function handle(request: Request) {
                 await trx
                     .insertInto("inventoryMovements")
                     .values({
-                        tenantId: input.tenantId,
+                        tenantId: tenantId,
                         productId: product.id,
                         type: "restock",
                         quantityChange: input.stockQuantity,
@@ -101,22 +135,28 @@ export async function handle(request: Request) {
             await trx
                 .insertInto("auditLogs")
                 .values({
-                    tenantId: input.tenantId,
+                    tenantId: tenantId,
                     actorUserId: user.id,
                     action: "product.created",
                     entityType: "product",
                     entityId: product.id,
-                    metadata: { name: input.name },
+                    metadata: { name: input.name, images: input.images?.length || 0 },
                 })
                 .execute();
 
             return product;
         });
 
-        return new Response(superjson.stringify({ id: result.id, slug: result.slug } satisfies OutputType));
+        return new Response(JSON.stringify({ id: result.id, slug: result.slug } satisfies OutputType), {
+            status: 200,
+            headers: { "Content-Type": "application/json" }
+        });
     } catch (error) {
         console.error("create_product error:", error);
         const message = error instanceof Error ? error.message : "Failed to create product";
-        return new Response(superjson.stringify({ error: message }), { status: 400 });
+        return new Response(JSON.stringify({ error: message }), { 
+            status: 400,
+            headers: { "Content-Type": "application/json" }
+        });
     }
 }

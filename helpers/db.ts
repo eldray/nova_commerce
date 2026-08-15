@@ -1,4 +1,4 @@
-import { Kysely, PostgresDialect } from "kysely";
+import { Kysely, PostgresDialect, sql } from "kysely";
 import type { DB } from "./schema";
 
 // Initializes the Kysely database client. In runtime or dev mode, connection parameters are supplied via environment variables.
@@ -14,3 +14,5 @@ const dialect = new PostgresDialect({
 export const db = new Kysely<DB>({
     dialect,
 });
+
+export { sql };

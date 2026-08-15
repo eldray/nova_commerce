@@ -15,6 +15,10 @@
   transform: translateY(-2px);
 }
 
+.cardWrapper {
+  position: relative;
+}
+
 .imageWrap {
   position: relative;
   width: 100%;
@@ -38,6 +42,42 @@
   position: absolute;
   top: var(--spacing-2);
   left: var(--spacing-2);
+  z-index: 2;
+}
+
+.wishlistButton {
+  position: absolute;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: all 0.2s ease;
+  color: var(--muted-foreground);
+}
+
+.card:hover .wishlistButton {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.wishlistButton:hover {
+  background: white;
+  color: var(--destructive);
+  transform: scale(1.08);
+}
+
+.wishlistActive {
+  color: var(--destructive);
 }
 
 .info {

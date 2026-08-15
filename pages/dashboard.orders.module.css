@@ -123,3 +123,21 @@
 .badge {
     text-transform: capitalize;
 }
+
+.orderRow {
+    transition: background-color 0.2s;
+}
+
+.orderRow:hover {
+    background-color: #f9fafb;
+}
+
+.orderLink {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+.orderLink:hover .orderNumber {
+    color: #6366f1;
+}
