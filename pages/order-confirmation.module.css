@@ -1,0 +1,60 @@
+.wrapper {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: var(--spacing-20) var(--spacing-6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.icon {
+    color: var(--success);
+    margin-bottom: var(--spacing-4);
+}
+
+.title {
+    font-family: var(--font-family-display);
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--foreground);
+    margin: 0 0 var(--spacing-2);
+}
+
+.subtitle {
+    color: var(--muted-foreground);
+    margin: 0 0 var(--spacing-6);
+    line-height: 1.6;
+}
+
+.card {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9375rem;
+    color: var(--muted-foreground);
+    padding: var(--spacing-2) 0;
+}
+
+.orderNumber {
+    font-family: var(--font-family-monospace);
+    font-weight: 600;
+    color: var(--foreground);
+}
+
+.total {
+    font-weight: 700;
+    color: var(--foreground);
+}
+
+.continueButton {
+    width: 100%;
+}

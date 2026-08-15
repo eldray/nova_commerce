@@ -1,0 +1,6 @@
+Nova Commerce — multi-tenant Ghana e-commerce SaaS. Two distinct audiences share one system: merchant dashboard (dense, operational) and public storefronts (warm, trustworthy, mobile-first). One thread ties them: "West African market-modern" — the energy of Accra/Kumasi retail (bold, warm, optimistic) rendered with disciplined, premium restraint rather than a folkloric or rugged costume. Warm ivory/sand grounds, deep ink text, a single confident accent (terracotta-gold, not a generic blue), generous rounded surfaces, soft layered shadows. Numerals are tabular in dashboard contexts for scanability.
+
+Modes: both light and dark, light is default/primary.
+Pacing: dashboard and admin surfaces are tight (dense tables, compact controls); storefront pages are generous (spacious hero, breathing room around product photography).
+Global character: soft-rounded cards (radius-lg) on dashboard panels and product cards alike; thin 1px hairline borders over heavy shadows; accent used sparingly for primary actions, status, and price emphasis only — never as a background wash. Display type is a warm, characterful serif for storefront headings and marketing moments (hero, section titles); dashboard UI uses a quiet, legible sans throughout, including tabular data.
+

@@ -1,0 +1,167 @@
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-6);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-4);
+}
+
+.title {
+    font-family: var(--font-family-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--foreground);
+}
+
+.subtitle {
+    margin: var(--spacing-1) 0 0;
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+}
+
+.tableCard {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.rowSkeleton {
+    height: 56px;
+    margin: var(--spacing-3) var(--spacing-4);
+}
+
+.errorText {
+    color: var(--error);
+    padding: var(--spacing-6);
+    margin: 0;
+}
+
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-2);
+    text-align: center;
+    padding: var(--spacing-16) var(--spacing-6);
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-lg);
+}
+
+.emptyIcon {
+    color: var(--muted-foreground);
+    margin-bottom: var(--spacing-2);
+}
+
+.emptyTitle {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--foreground);
+}
+
+.emptySubtitle {
+    margin: 0 0 var(--spacing-4);
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+.table th {
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted-foreground);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.table td {
+    padding: var(--spacing-3) var(--spacing-4);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.875rem;
+    color: var(--foreground);
+    vertical-align: middle;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+
+.productCell {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.thumb {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    background: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: var(--muted-foreground);
+    flex-shrink: 0;
+}
+
+.thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.productName {
+    font-weight: 500;
+}
+
+.productSku {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+}
+
+.mutedCell {
+    color: var(--muted-foreground);
+}
+
+.price {
+    font-weight: 600;
+}
+
+.comparePrice {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    text-decoration: line-through;
+}
+
+.stockValue {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-1);
+}
+
+.lowStockIcon {
+    color: var(--warning);
+}
+
+.statusBadge {
+    text-transform: capitalize;
+}

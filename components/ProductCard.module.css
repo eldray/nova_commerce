@@ -1,0 +1,96 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--card-foreground);
+  transition: box-shadow var(--animation-duration-normal) ease, transform var(--animation-duration-normal) ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.imageWrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--muted);
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--animation-duration-slow) ease;
+}
+
+.card:hover .image {
+  transform: scale(1.04);
+}
+
+.badge {
+  position: absolute;
+  top: var(--spacing-2);
+  left: var(--spacing-2);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  padding: var(--spacing-3) var(--spacing-4) var(--spacing-4);
+}
+
+.name {
+  font-family: var(--font-family-base);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--card-foreground);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ratingRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.stars {
+  color: var(--accent);
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+}
+
+.reviewCount {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-1);
+}
+
+.price {
+  font-family: var(--font-family-base);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--primary);
+}
+
+.comparePrice {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+}
