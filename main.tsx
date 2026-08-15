@@ -32,6 +32,7 @@ import AboutPage from "./pages/about";
 import CartPage from "./pages/cart";
 import CheckoutPage from "./pages/checkout";
 import OrderConfirmationPage from "./pages/order-confirmation";
+import CustomerHomePage from "./pages/customer.home";
 
 // Layout imports
 import { StorefrontLayout } from "./components/StorefrontLayout";
@@ -56,6 +57,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/checkout" element={<StorefrontLayout><CheckoutPage /></StorefrontLayout>} />
           <Route path="/order-confirmation" element={<StorefrontLayout><OrderConfirmationPage /></StorefrontLayout>} />
           <Route path="/wishlist" element={<StorefrontLayout><WishlistPage /></StorefrontLayout>} />
+          <Route path="/customer-home" element={<StorefrontLayout><CustomerHomePage /></StorefrontLayout>} />
 
           {/* Auth routes */}
           <Route path="/login" element={<AuthLayout><LoginPage /></AuthLayout>} />

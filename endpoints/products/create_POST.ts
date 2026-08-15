@@ -72,12 +72,15 @@ export async function handle(request: Request) {
             slug = `${baseSlug}-${attempt}`;
         }
 
+const variantIds: number[] = [];
+
         const result = await db.transaction().execute(async (trx) => {
             const product = await trx
                 .insertInto("products")
                 .values({
                     tenantId: tenantId,
                     categoryId: input.categoryId ?? null,
+                    brandId: input.brandId ?? null,
                     name: input.name,
                     slug,
                     description: input.description ?? null,
@@ -85,7 +88,13 @@ export async function handle(request: Request) {
                     status: input.status,
                     price: input.price.toFixed(2),
                     salePrice: input.salePrice ? input.salePrice.toFixed(2) : null,
-                    stockQuantity: input.stockQuantity,
+                    cost: input.costPrice ? input.costPrice.toFixed(2) : null,
+                    taxRate: (input.taxRate ?? 0).toFixed(2),
+                    weight: input.weight ? input.weight.toFixed(3) : null,
+                    hasVariants: input.hasVariants && (input.variants?.length ?? 0) > 0,
+                    stockQuantity: input.hasVariants && input.variants ? 
+                        input.variants.reduce((sum, v) => sum + v.stockQuantity, 0) : 
+                        input.stockQuantity,
                     lowStockThreshold: input.lowStockThreshold,
                     images: input.images && input.images.length > 0 ? JSON.stringify(input.images) : null,
                     primaryImage: input.primaryImage ?? null,
@@ -101,7 +110,7 @@ export async function handle(request: Request) {
                     position: index,
                     isPrimary: index === 0,
                 }));
-                
+
                 await trx
                     .insertInto("productImages")
                     .values(imageInserts)
@@ -109,16 +118,53 @@ export async function handle(request: Request) {
             } else if (input.primaryImage) {
                 await trx
                     .insertInto("productImages")
-                    .values({ 
-                        productId: product.id, 
-                        url: input.primaryImage, 
+                    .values({
+                        productId: product.id,
+                        url: input.primaryImage,
                         position: 0,
-                        isPrimary: true 
+                        isPrimary: true
                     })
                     .execute();
             }
 
-            if (input.stockQuantity > 0) {
+            // Create variants if enabled
+            if (input.hasVariants && input.variants && input.variants.length > 0) {
+                for (const variant of input.variants) {
+                    const variantResult = await trx
+                        .insertInto("productVariants")
+                        .values({
+                            productId: product.id,
+                            tenantId: tenantId,
+                            sku: variant.sku ?? null,
+                            attributes: JSON.stringify(variant.attributes),
+                            price: variant.price.toFixed(2),
+                            salePrice: variant.salePrice ? variant.salePrice.toFixed(2) : null,
+                            stockQuantity: variant.stockQuantity,
+                            imageUrl: variant.imageUrl ?? null,
+                        })
+                        .returning(["id"])
+                        .executeTakeFirstOrThrow();
+                    
+                    variantIds.push(variantResult.id);
+
+                    // Create inventory movement for variant
+                    if (variant.stockQuantity > 0) {
+                        await trx
+                            .insertInto("inventoryMovements")
+                            .values({
+                                tenantId: tenantId,
+                                productId: product.id,
+                                variantId: variantResult.id,
+                                type: "restock",
+                                quantityChange: variant.stockQuantity,
+                                reason: "Initial stock for variant",
+                                createdByUserId: user.id,
+                            })
+                            .execute();
+                    }
+                }
+            } else if (input.stockQuantity > 0) {
+                // Create inventory movement for base product (no variants)
                 await trx
                     .insertInto("inventoryMovements")
                     .values({
@@ -140,22 +186,26 @@ export async function handle(request: Request) {
                     action: "product.created",
                     entityType: "product",
                     entityId: product.id,
-                    metadata: { name: input.name, images: input.images?.length || 0 },
+                    metadata: { 
+                        name: input.name, 
+                        images: input.images?.length || 0,
+                        hasVariants: input.hasVariants,
+                        variantCount: input.variants?.length || 0,
+                    },
                 })
                 .execute();
 
             return product;
         });
 
-        return new Response(JSON.stringify({ id: result.id, slug: result.slug } satisfies OutputType), {
+        return new Response(JSON.stringify({ 
+            id: result.id, 
+            slug: result.slug,
+            variantIds: variantIds.length > 0 ? variantIds : undefined
+        } satisfies OutputType), {
             status: 200,
             headers: { "Content-Type": "application/json" }
         });
-    } catch (error) {
-        console.error("create_product error:", error);
-        const message = error instanceof Error ? error.message : "Failed to create product";
-        return new Response(JSON.stringify({ error: message }), { 
-            status: 400,
             headers: { "Content-Type": "application/json" }
         });
     }

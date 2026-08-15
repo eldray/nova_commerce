@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Nova Commerce!</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.6;
+      color: #1a1a1a;
+      background-color: #f5f5f5;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 2rem;
+    }
+    
+    .header {
+      text-align: center;
+      padding-bottom: 2rem;
+      border-bottom: 2px solid #667eea;
+      margin-bottom: 2rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: -2rem -2rem 2rem -2rem;
+      padding: 3rem 2rem;
+    }
+    
+    .logo {
+      font-size: 2rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 0.5rem;
+    }
+    
+    .tagline {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 1.1rem;
+    }
+    
+    .greeting {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: #1a1a1a;
+    }
+    
+    .message {
+      margin-bottom: 2rem;
+      color: #444;
+      line-height: 1.8;
+    }
+    
+    .store-name {
+      font-size: 1.25rem;
+      color: #667eea;
+      font-weight: 600;
+      margin: 1rem 0;
+    }
+    
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem 2.5rem;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      text-align: center;
+      margin: 1.5rem 0;
+    }
+    
+    .secondary-button {
+      display: inline-block;
+      background: #f5f5f5;
+      color: #667eea;
+      padding: 1rem 2.5rem;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      text-align: center;
+      margin: 0 0.5rem;
+      border: 2px solid #667eea;
+    }
+    
+    .steps-container {
+      background: #f9f9f9;
+      padding: 2rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+    }
+    
+    .steps-title {
+      font-size: 1.25rem;
+      color: #667eea;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    
+    .step {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .step:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    
+    .step-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 1.25rem;
+      margin-right: 1rem;
+      flex-shrink: 0;
+    }
+    
+    .step-content h4 {
+      color: #1a1a1a;
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+    
+    .step-content p {
+      color: #666;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    
+    .feature-item {
+      background: #f0f4ff;
+      padding: 1rem;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .feature-text {
+      font-size: 0.875rem;
+      color: #666;
+    }
+    
+    .support-box {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 1.5rem;
+      border-radius: 4px;
+      margin: 2rem 0;
+    }
+    
+    .support-box p {
+      color: #856404;
+      margin-bottom: 0.5rem;
+    }
+    
+    .footer {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 2px solid #e5e5e5;
+      text-align: center;
+      color: #666;
+      font-size: 0.875rem;
+    }
+    
+    .footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+    
+    @media (max-width: 600px) {
+      .container {
+        padding: 1rem;
+      }
+      
+      .header {
+        margin: -1rem -1rem 1.5rem -1rem;
+        padding: 2rem 1rem;
+      }
+      
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .cta-button,
+      .secondary-button {
+        width: 100%;
+        display: block;
+        margin: 0.5rem 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">🎉 Welcome Aboard!</div>
+      <div class="tagline">Your journey to e-commerce success starts here</div>
+    </div>
+
+    <!-- Greeting -->
+    <div class="greeting">
+      Hi {{userName}},
+    </div>
+
+    <div class="message">
+      Congratulations on taking the first step towards building your online business! We're thrilled to have you join the Nova Commerce family.
+    </div>
+
+    <div class="store-name">
+      🏪 Your Store: {{storeName}}
+    </div>
+
+    <!-- CTA Buttons -->
+    <div style="text-align: center;">
+      <a href="{{dashboardUrl}}" class="cta-button">Go to Dashboard</a>
+      <br>
+      <a href="{{setupGuideUrl}}" class="secondary-button">View Setup Guide</a>
+    </div>
+
+    <!-- Steps Container -->
+    <div class="steps-container">
+      <h3 class="steps-title">🚀 Quick Start Guide</h3>
+      
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h4>Complete Your Store Setup</h4>
+          <p>Add your logo, choose colors, and configure your store settings to match your brand identity.</p>
+        </div>
+      </div>
+      
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h4>Add Your First Products</h4>
+          <p>Upload product images, write compelling descriptions, and set competitive prices.</p>
+        </div>
+      </div>
+      
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h4>Configure Payments</h4>
+          <p>Connect Paystack or Hubtel to accept Mobile Money and card payments from Ghanaian customers.</p>
+        </div>
+      </div>
+      
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h4>Set Up Delivery</h4>
+          <p>Define delivery zones and fees for Accra, Kumasi, and other regions you serve.</p>
+        </div>
+      </div>
+      
+      <div class="step">
+        <div class="step-number">5</div>
+        <div class="step-content">
+          <h4>Publish Your Store</h4>
+          <p>Review everything and go live! Share your store URL with customers.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Features Grid -->
+    <div class="features-grid">
+      <div class="feature-item">
+        <div class="feature-icon">💳</div>
+        <div class="feature-text">Accept Mobile Money & Cards</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">📱</div>
+        <div class="feature-text">Mobile-Friendly Storefront</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">📊</div>
+        <div class="feature-text">Real-Time Analytics</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🎨</div>
+        <div class="feature-text">Customizable Themes</div>
+      </div>
+    </div>
+
+    <!-- Support Box -->
+    <div class="support-box">
+      <p><strong>💡 Need Help?</strong></p>
+      <p>Our support team is here to help you succeed. Reach out anytime at <a href="mailto:{{supportEmail}}" style="color: #856404;">{{supportEmail}}</a></p>
+      <p>You can also check our comprehensive documentation and video tutorials in your dashboard.</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>Ready to start selling? <a href="{{dashboardUrl}}">Head to your dashboard</a> now!</p>
+      <p>&copy; {{currentYear}} {{companyName}}. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

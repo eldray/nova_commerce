@@ -303,6 +303,93 @@ export interface PaymentTransactions {
   updatedAt: Generated<Timestamp | null>;
 }
 
+export interface SubscriptionPlans {
+  id: Generated<number>;
+  name: string;
+  slug: string;
+  description: string | null;
+  priceMonthly: number;
+  priceYearly: number;
+  currency: string;
+  maxProducts: number;
+  maxStaff: number;
+  maxStorageGb: number;
+  hasCustomDomain: boolean;
+  hasAdvancedAnalytics: boolean;
+  hasCouponSystem: boolean;
+  hasEmailSupport: boolean;
+  hasPrioritySupport: boolean;
+  hasApiAccess: boolean;
+  commissionRate: number;
+  isActive: boolean;
+  isPopular: boolean;
+  sortOrder: number;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+}
+
+export interface MerchantSubscriptions {
+  id: Generated<number>;
+  tenantId: number;
+  planId: number;
+  status: string;
+  billingCycle: string;
+  startedAt: Generated<Timestamp>;
+  currentPeriodStart: Generated<Timestamp>;
+  currentPeriodEnd: Timestamp;
+  trialEndsAt: Timestamp | null;
+  cancelledAt: Timestamp | null;
+  amount: number | null;
+  currency: string;
+  stripeSubscriptionId: string | null;
+  cancelReason: string | null;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+}
+
+export interface SubscriptionUsage {
+  id: Generated<number>;
+  subscriptionId: number;
+  productsCount: number;
+  staffCount: number;
+  storageUsedMb: number;
+  ordersCount: number;
+  periodStart: Generated<Timestamp>;
+  periodEnd: Timestamp;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+}
+
+export interface SubscriptionInvoices {
+  id: Generated<number>;
+  tenantId: number;
+  subscriptionId: number | null;
+  planId: number | null;
+  invoiceNumber: string;
+  amount: number;
+  taxAmount: number;
+  totalAmount: number;
+  currency: string;
+  periodStart: Timestamp;
+  periodEnd: Timestamp;
+  status: string;
+  paymentMethod: string | null;
+  paidAt: Timestamp | null;
+  stripeInvoiceId: string | null;
+  stripePaymentIntentId: string | null;
+  pdfUrl: string | null;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+}
+
+export interface PlanFeatures {
+  id: Generated<number>;
+  planId: number;
+  featureKey: string;
+  featureValue: string;
+  createdAt: Generated<Timestamp>;
+}
+
 export interface DB {
   auditLogs: AuditLogs;
   brands: Brands;
@@ -312,16 +399,21 @@ export interface DB {
   deliveryZones: DeliveryZones;
   inventoryMovements: InventoryMovements;
   loginAttempts: LoginAttempts;
+  merchantSubscriptions: MerchantSubscriptions;
   orderItems: OrderItems;
   orders: Orders;
   orderStatusHistory: OrderStatusHistory;
   paymentCredentials: PaymentCredentials;
   paymentTransactions: PaymentTransactions;
+  planFeatures: PlanFeatures;
   productImages: ProductImages;
   products: Products;
   productVariants: ProductVariants;
   sessions: Sessions;
   stores: Stores;
+  subscriptionInvoices: SubscriptionInvoices;
+  subscriptionPlans: SubscriptionPlans;
+  subscriptionUsage: SubscriptionUsage;
   tenants: Tenants;
   tenantUsers: TenantUsers;
   userPasswords: UserPasswords;

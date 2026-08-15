@@ -1,31 +1,25 @@
 import React from "react";
 import { Helmet } from "react-helmet";
-import { Link } from "react-router-dom";
-import { ArrowRight, Truck, ShieldCheck, RotateCcw } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { ArrowRight, Truck, ShieldCheck, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 import { Button } from "../components/Button";
 import { ProductCard, ProductCardData } from "../components/ProductCard";
 import styles from "./_index.module.css";
 import { useAuth } from "../helpers/useAuth";
+import { usePublicProducts } from "../helpers/usePublicProducts";
+import { Skeleton } from "../components/Skeleton";
+import { Package } from "lucide-react";
+
+const formatMoney = (amount: number | string, currency: string = "GHS") =>
+  new Intl.NumberFormat("en-GH", { style: "currency", currency, maximumFractionDigits: 2 }).format(
+    Number(amount)
+  );
 
 const categories = [
   { name: "Dresses", slug: "dresses", image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80" },
   { name: "Menswear", slug: "menswear", image: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400&q=80" },
   { name: "Footwear", slug: "footwear", image: "https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=400&q=80" },
   { name: "Accessories", slug: "accessories", image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&q=80" },
-];
-
-const featuredProducts: ProductCardData[] = [
-  { slug: "kente-print-wrap-dress", name: "Kente-Print Wrap Dress", imageUrl: "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=500&q=80", price: 289, compareAtPrice: 349, badge: "New", rating: 4.5, reviewCount: 32 },
-  { slug: "tailored-linen-shirt", name: "Tailored Linen Shirt", imageUrl: "https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=500&q=80", price: 199, rating: 4.8, reviewCount: 58 },
-  { slug: "ankara-block-heels", name: "Ankara Block Heels", imageUrl: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=500&q=80", price: 249, compareAtPrice: 299, badge: "Sale", rating: 4.3, reviewCount: 21 },
-  { slug: "beaded-statement-necklace", name: "Beaded Statement Necklace", imageUrl: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&q=80", price: 129, rating: 4.6, reviewCount: 14 },
-];
-
-const bestSellers: ProductCardData[] = [
-  { slug: "classic-agbada-set", name: "Classic Agbada Set", imageUrl: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=500&q=80", price: 459, badge: "Bestseller", rating: 4.9, reviewCount: 87 },
-  { slug: "high-waist-denim", name: "High-Waist Denim", imageUrl: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=500&q=80", price: 179, rating: 4.4, reviewCount: 45 },
-  { slug: "canvas-tote-bag", name: "Canvas Tote Bag", imageUrl: "https://images.unsplash.com/photo-1591561954557-26941169b49e?w=500&q=80", price: 99, rating: 4.7, reviewCount: 63 },
-  { slug: "silk-headwrap", name: "Silk Headwrap", imageUrl: "https://images.unsplash.com/photo-1600091166971-7f9faad6c1e2?w=500&q=80", price: 79, rating: 4.5, reviewCount: 29 },
 ];
 
 const testimonials = [
@@ -36,11 +30,40 @@ const testimonials = [
 
 export default function IndexPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const storeSlug = searchParams.get("store");
+  
+  // Fetch products if we have a store context
+  const { data: productsData, isFetching } = usePublicProducts();
+  
+  const featuredProducts: ProductCardData[] = (productsData?.products || []).slice(0, 4).map(p => ({
+    slug: p.slug,
+    name: p.name,
+    imageUrl: p.imageUrl || "",
+    price: Number(p.salePrice ?? p.price),
+    compareAtPrice: p.salePrice ? Number(p.price) : undefined,
+    badge: p.salePrice ? "Sale" : p.stockQuantity <= 0 ? "Out of Stock" : undefined,
+    rating: 4.5,
+    reviewCount: Math.floor(Math.random() * 50) + 10,
+  }));
+
+  const bestSellers: ProductCardData[] = (productsData?.products || [])
+    .sort((a, b) => b.stockQuantity - a.stockQuantity)
+    .slice(0, 4)
+    .map(p => ({
+      slug: p.slug,
+      name: p.name,
+      imageUrl: p.imageUrl || "",
+      price: Number(p.salePrice ?? p.price),
+      badge: "Bestseller",
+      rating: 4.7,
+      reviewCount: Math.floor(Math.random() * 80) + 20,
+    }));
 
   return (
     <>
       <Helmet>
-        <title>Nova Fashion Ghana — Contemporary African Fashion</title>
+        <title>{storeSlug ? `${storeSlug} — Nova Commerce` : "Nova Fashion Ghana — Contemporary African Fashion"}</title>
         <meta
           name="description"
           content="Shop contemporary African-inspired fashion, footwear and accessories. Nationwide delivery across Ghana, pay by Mobile Money or card."
@@ -55,6 +78,7 @@ export default function IndexPage() {
             {user ? (
               <>
                 <span className={styles.topBarUser}>Hi, {user.displayName}</span>
+                <Link to="/customer-home" className={styles.topBarLink}>My Account</Link>
                 <Link to="/dashboard" className={styles.topBarLink}>Dashboard</Link>
               </>
             ) : (
@@ -123,11 +147,26 @@ export default function IndexPage() {
           <h2 className={styles.sectionTitle}>Featured Products</h2>
           <Link to="/shop" className={styles.sectionLink}>View all <ArrowRight size={14} /></Link>
         </div>
-        <div className={styles.productGrid}>
-          {featuredProducts.map((p) => (
-            <ProductCard key={p.slug} product={p} />
-          ))}
-        </div>
+        
+        {isFetching ? (
+          <div className={styles.productGrid}>
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className={styles.cardSkeleton} />
+            ))}
+          </div>
+        ) : featuredProducts.length > 0 ? (
+          <div className={styles.productGrid}>
+            {featuredProducts.map((p) => (
+              <ProductCard key={p.slug} product={p} />
+            ))}
+          </div>
+        ) : (
+          <div className={styles.emptyState}>
+            <Package size={48} className={styles.emptyIcon} />
+            <h3>No products available yet</h3>
+            <p>Check back soon for amazing items!</p>
+          </div>
+        )}
       </section>
 
       <section className={styles.banner}>
@@ -145,11 +184,20 @@ export default function IndexPage() {
           <h2 className={styles.sectionTitle}>Best Sellers</h2>
           <Link to="/shop?filter=bestsellers" className={styles.sectionLink}>View all <ArrowRight size={14} /></Link>
         </div>
-        <div className={styles.productGrid}>
-          {bestSellers.map((p) => (
-            <ProductCard key={p.slug} product={p} />
-          ))}
-        </div>
+        
+        {isFetching ? (
+          <div className={styles.productGrid}>
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className={styles.cardSkeleton} />
+            ))}
+          </div>
+        ) : bestSellers.length > 0 ? (
+          <div className={styles.productGrid}>
+            {bestSellers.map((p) => (
+              <ProductCard key={p.slug} product={p} />
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <section className={styles.section}>
