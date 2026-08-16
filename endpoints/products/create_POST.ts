@@ -206,6 +206,10 @@ const variantIds: number[] = [];
             status: 200,
             headers: { "Content-Type": "application/json" }
         });
+    } catch (error) {
+        console.error('Error creating product:', error);
+        return new Response(JSON.stringify({ error: 'Failed to create product' }), {
+            status: 500,
             headers: { "Content-Type": "application/json" }
         });
     }

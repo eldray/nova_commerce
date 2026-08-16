@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "db:seed": "tsx scripts/seed-demo-data.ts",
+    "db:reset": "tsx scripts/reset-database.ts",
+    "db:create-admin": "tsx scripts/create-super-admin.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -28,6 +31,7 @@
     "react-router-dom": "^6.26.0",
     "recharts": "^3.10.1",
     "superjson": "^2.0.0",
+    "wouter": "^3.10.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -39,6 +43,7 @@
     "@types/react-helmet": "^6.1.11",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "tsx": "^4.23.12",
     "typescript": "^5.5.3",
     "uuid": "^14.0.1",
     "vite": "^5.3.4"

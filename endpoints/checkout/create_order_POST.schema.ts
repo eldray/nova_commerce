@@ -18,6 +18,7 @@ export const schema = z.object({
     deliveryCity: z.string().min(2, "City is required"),
     guestEmail: z.string().email().optional(),
     notes: z.string().max(500).optional(),
+    couponCode: z.string().max(50).optional(),
 });
 
 export type InputType = z.infer<typeof schema>;
@@ -26,6 +27,8 @@ export type OutputType = {
     orderId: number;
     orderNumber: string;
     total: string;
+    discountAmount: string;
+    couponCode?: string;
 };
 
 export const postCreateOrder = async (

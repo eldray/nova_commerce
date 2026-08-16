@@ -25,9 +25,9 @@ export const GET = createEndpoint({
 
       // Get active tenants (with published stores)
       const activeTenantsResult = await db
-        .select({ count: sql<number>`count(distinct t.id)` })
-        .from(tenants t)
-        .innerJoin(stores, eq(stores.tenantId, t.id))
+        .select({ count: sql<number>`count(distinct ${tenants.id})` })
+        .from(tenants)
+        .innerJoin(stores, eq(stores.tenantId, tenants.id))
         .where(eq(stores.status, 'published'));
       const activeTenants = Number(activeTenantsResult[0]?.count || 0);
 
