@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { SparklesIcon, ShieldCheckIcon, RocketLaunchIcon, ChartBarIcon, DevicePhoneMobileIcon, CreditCardIcon } from '@heroicons/react/24/outline';
-import './landing.module.css';
+import { Button } from '../components/Button';
+import { Card } from '../components/Card';
+import { Sparkles, ShieldCheck, Rocket, BarChart3, Smartphone, CreditCard } from 'lucide-react';
+import styles from './landing.module.css';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -19,32 +19,32 @@ export default function LandingPage() {
 
   const features = [
     {
-      icon: SparklesIcon,
+      icon: Sparkles,
       title: 'Beautiful Storefronts',
       description: 'Create stunning, mobile-first online stores that convert visitors into customers.'
     },
     {
-      icon: ShieldCheckIcon,
+      icon: ShieldCheck,
       title: 'Secure & Reliable',
       description: 'Enterprise-grade security with tenant isolation and encrypted data storage.'
     },
     {
-      icon: CreditCardIcon,
+      icon: CreditCard,
       title: 'Local Payments',
       description: 'Accept Mobile Money, Paystack, Hubtel and other African payment methods.'
     },
     {
-      icon: DevicePhoneMobileIcon,
+      icon: Smartphone,
       title: 'Mobile Optimized',
       description: 'Perfect shopping experience on any device, anywhere in Ghana.'
     },
     {
-      icon: ChartBarIcon,
+      icon: BarChart3,
       title: 'Smart Analytics',
       description: 'Track sales, customers, and trends with beautiful, actionable dashboards.'
     },
     {
-      icon: RocketLaunchIcon,
+      icon: Rocket,
       title: 'Launch in Minutes',
       description: 'From signup to live store in under 10 minutes with our guided setup wizard.'
     }
@@ -79,20 +79,20 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="landing-page">
+    <div className={styles['landing-page']}>
       {/* Navigation */}
-      <nav className={`landing-nav ${isScrolled ? 'scrolled' : ''}`}>
-        <div className="nav-container">
-          <Link to="/" className="nav-logo">
-            <span className="logo-icon">🛍️</span>
-            <span className="logo-text">Nova Commerce</span>
+      <nav className={`${styles['landing-nav']} ${isScrolled ? styles['scrolled'] : ''}`}>
+        <div className={styles['nav-container']}>
+          <Link to="/" className={styles['nav-logo']}>
+            <span className={styles['logo-icon']}>🛍️</span>
+            <span className={styles['logo-text']}>Nova Commerce</span>
           </Link>
-          <div className="nav-links">
-            <a href="#features" className="nav-link">Features</a>
-            <a href="#testimonials" className="nav-link">Testimonials</a>
-            <a href="#pricing" className="nav-link">Pricing</a>
+          <div className={styles['nav-links']}>
+            <a href="#features" className={styles['nav-link']}>Features</a>
+            <a href="#testimonials" className={styles['nav-link']}>Testimonials</a>
+            <a href="#pricing" className={styles['nav-link']}>Pricing</a>
           </div>
-          <div className="nav-actions">
+          <div className={styles['nav-actions']}>
             <Link to="/login">
               <Button variant="ghost">Sign In</Button>
             </Link>
@@ -104,94 +104,94 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="hero-section">
-        <div className="hero-content">
-          <div className="hero-badge">
-            <SparklesIcon className="badge-icon" />
+      <section className={styles['hero-section']}>
+        <div className={styles['hero-content']}>
+          <div className={styles['hero-badge']}>
+            <Sparkles className={styles['badge-icon']} />
             <span>#1 E-commerce Platform in Ghana</span>
           </div>
-          <h1 className="hero-title">
+          <h1 className={styles['hero-title']}>
             Build Your Online Store
-            <span className="highlight"> or Shop Amazing Products</span>
+            <span className={styles['highlight']}> or Shop Amazing Products</span>
           </h1>
-          <p className="hero-subtitle">
+          <p className={styles['hero-subtitle']}>
             Whether you're a business ready to sell online or a customer looking for unique Ghanaian products, 
             Nova Commerce connects you. Accept Mobile Money, manage inventory, and grow your sales with beautiful, fast storefronts.
           </p>
-          <div className="hero-buttons">
+          <div className={styles['hero-buttons']}>
             <Link to="/register?type=merchant">
-              <Button variant="primary" size="large" className="cta-button">
+              <Button variant="primary" size="large" className={styles['cta-button']}>
                 Start Selling Today
-                <RocketLaunchIcon className="button-icon" />
+                <Rocket className={styles['button-icon']} />
               </Button>
             </Link>
             <Link to="/shop">
-              <Button variant="secondary" size="large" className="cta-button-secondary">
+              <Button variant="secondary" size="large" className={styles['cta-button-secondary']}>
                 Browse Stores & Shop
-                <SparklesIcon className="button-icon" />
+                <Sparkles className={styles['button-icon']} />
               </Button>
             </Link>
           </div>
-          <p className="trial-info">No credit card required • 14-day free trial for merchants • Free shopping for customers</p>
-          <div className="hero-stats">
+          <p className={styles['trial-info']}>No credit card required • 14-day free trial for merchants • Free shopping for customers</p>
+          <div className={styles['hero-stats']}>
             {stats.map((stat, index) => (
-              <div key={index} className="stat-item">
-                <div className="stat-value">{stat.value}</div>
-                <div className="stat-label">{stat.label}</div>
+              <div key={index} className={styles['stat-item']}>
+                <div className={styles['stat-value']}>{stat.value}</div>
+                <div className={styles['stat-label']}>{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
-        <div className="hero-image">
+        <div className={styles['hero-image']}>
           <img 
             src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=600&fit=crop" 
             alt="E-commerce Dashboard"
-            className="hero-img"
+            className={styles['hero-img']}
           />
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="features-section">
-        <div className="section-header">
-          <h2 className="section-title">Everything You Need to Sell Online</h2>
-          <p className="section-subtitle">
+      <section id="features" className={styles['features-section']}>
+        <div className={styles['section-header']}>
+          <h2 className={styles['section-title']}>Everything You Need to Sell Online</h2>
+          <p className={styles['section-subtitle']}>
             Powerful features designed for modern African businesses
           </p>
         </div>
-        <div className="features-grid">
+        <div className={styles['features-grid']}>
           {features.map((feature, index) => (
-            <Card key={index} className="feature-card">
-              <div className="feature-icon-wrapper">
-                <feature.icon className="feature-icon" />
+            <Card key={index} className={styles['feature-card']}>
+              <div className={styles['feature-icon-wrapper']}>
+                <feature.icon className={styles['feature-icon']} />
               </div>
-              <h3 className="feature-title">{feature.title}</h3>
-              <p className="feature-description">{feature.description}</p>
+              <h3 className={styles['feature-title']}>{feature.title}</h3>
+              <p className={styles['feature-description']}>{feature.description}</p>
             </Card>
           ))}
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="how-it-works">
-        <div className="section-header">
-          <h2 className="section-title">Launch Your Store in 3 Simple Steps</h2>
+      <section className={styles['how-it-works']}>
+        <div className={styles['section-header']}>
+          <h2 className={styles['section-title']}>Launch Your Store in 3 Simple Steps</h2>
         </div>
-        <div className="steps-container">
-          <div className="step">
-            <div className="step-number">1</div>
+        <div className={styles['steps-container']}>
+          <div className={styles['step']}>
+            <div className={styles['step-number']}>1</div>
             <h3>Create Your Account</h3>
             <p>Sign up in seconds and complete your business profile</p>
           </div>
-          <div className="step-divider"></div>
-          <div className="step">
-            <div className="step-number">2</div>
+          <div className={styles['step-divider']}></div>
+          <div className={styles['step']}>
+            <div className={styles['step-number']}>2</div>
             <h3>Customize Your Store</h3>
             <p>Add products, set up payments, and configure delivery</p>
           </div>
-          <div className="step-divider"></div>
-          <div className="step">
-            <div className="step-number">3</div>
+          <div className={styles['step-divider']}></div>
+          <div className={styles['step']}>
+            <div className={styles['step-number']}>3</div>
             <h3>Start Selling</h3>
             <p>Publish your store and accept orders immediately</p>
           </div>
@@ -199,23 +199,23 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="testimonials-section">
-        <div className="section-header">
-          <h2 className="section-title">Trusted by Ghanaian Businesses</h2>
-          <p className="section-subtitle">See what our merchants are saying</p>
+      <section id="testimonials" className={styles['testimonials-section']}>
+        <div className={styles['section-header']}>
+          <h2 className={styles['section-title']}>Trusted by Ghanaian Businesses</h2>
+          <p className={styles['section-subtitle']}>See what our merchants are saying</p>
         </div>
-        <div className="testimonials-grid">
+        <div className={styles['testimonials-grid']}>
           {testimonials.map((testimonial, index) => (
-            <Card key={index} className="testimonial-card">
-              <div className="testimonial-content">
-                <div className="quote-mark">"</div>
-                <p className="testimonial-quote">{testimonial.quote}</p>
+            <Card key={index} className={styles['testimonial-card']}>
+              <div className={styles['testimonial-content']}>
+                <div className={styles['quote-mark']}>"</div>
+                <p className={styles['testimonial-quote']}>{testimonial.quote}</p>
               </div>
-              <div className="testimonial-author">
-                <img src={testimonial.image} alt={testimonial.author} className="author-avatar" />
-                <div className="author-info">
-                  <div className="author-name">{testimonial.author}</div>
-                  <div className="author-role">{testimonial.role}</div>
+              <div className={styles['testimonial-author']}>
+                <img src={testimonial.image} alt={testimonial.author} className={styles['author-avatar']} />
+                <div className={styles['author-info']}>
+                  <div className={styles['author-name']}>{testimonial.author}</div>
+                  <div className={styles['author-role']}>{testimonial.role}</div>
                 </div>
               </div>
             </Card>
@@ -224,13 +224,13 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="cta-section">
-        <div className="cta-content">
-          <h2 className="cta-title">Ready to Get Started?</h2>
-          <p className="cta-subtitle">
+      <section className={styles['cta-section']}>
+        <div className={styles['cta-content']}>
+          <h2 className={styles['cta-title']}>Ready to Get Started?</h2>
+          <p className={styles['cta-subtitle']}>
             Join hundreds of Ghanaian businesses already selling with Nova Commerce, or discover amazing products from local stores
           </p>
-          <div className="hero-buttons">
+          <div className={styles['hero-buttons']}>
             <Link to="/register?type=merchant">
               <Button variant="primary" size="large">
                 Start Selling Now
@@ -251,27 +251,27 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="landing-footer">
-        <div className="footer-container">
-          <div className="footer-brand">
-            <span className="logo-icon">🛍️</span>
-            <span className="logo-text">Nova Commerce</span>
-            <p className="footer-tagline">Empowering African businesses to sell online</p>
+      <footer className={styles['landing-footer']}>
+        <div className={styles['footer-container']}>
+          <div className={styles['footer-brand']}>
+            <span className={styles['logo-icon']}>🛍️</span>
+            <span className={styles['logo-text']}>Nova Commerce</span>
+            <p className={styles['footer-tagline']}>Empowering African businesses to sell online</p>
           </div>
-          <div className="footer-links">
-            <div className="footer-column">
+          <div className={styles['footer-links']}>
+            <div className={styles['footer-column']}>
               <h4>Product</h4>
               <a href="#features">Features</a>
               <a href="#pricing">Pricing</a>
               <a href="/demo">Demo</a>
             </div>
-            <div className="footer-column">
+            <div className={styles['footer-column']}>
               <h4>Company</h4>
               <a href="#">About Us</a>
               <a href="#">Contact</a>
               <a href="#">Careers</a>
             </div>
-            <div className="footer-column">
+            <div className={styles['footer-column']}>
               <h4>Resources</h4>
               <a href="#">Help Center</a>
               <a href="#">Blog</a>
@@ -279,9 +279,9 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-        <div className="footer-bottom">
+        <div className={styles['footer-bottom']}>
           <p>&copy; 2024 Nova Commerce. All rights reserved.</p>
-          <div className="footer-legal">
+          <div className={styles['footer-legal']}>
             <a href="#">Privacy Policy</a>
             <a href="#">Terms of Service</a>
           </div>
