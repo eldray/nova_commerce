@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Helmet } from "react-helmet";
 import { UserPlus } from "lucide-react";
-import { useMyStores } from "../helpers/useStores";
+import { useMyStores } from "../helpers/useMyStores";
 import { useStaff, useInviteStaff } from "../helpers/useStaff";
 import { Badge } from "../components/Badge";
 import { Skeleton } from "../components/Skeleton";

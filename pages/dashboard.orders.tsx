@@ -2,7 +2,7 @@ import React from "react";
 import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
-import { useMyStores } from "../helpers/useStores";
+import { useMyStores } from "../helpers/useMyStores";
 import { useOrders } from "../helpers/useOrders";
 import { Badge } from "../components/Badge";
 import { Skeleton } from "../components/Skeleton";
