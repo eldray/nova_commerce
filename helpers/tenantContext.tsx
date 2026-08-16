@@ -97,3 +97,16 @@ export async function getTenantsForUser(userId: number) {
     .orderBy("tenantUsers.createdAt", "asc")
     .execute();
 }
+
+// Helper functions for getting tenant ID from session
+export async function getTenantIdFromSession(request: Request): Promise<number | null> {
+  const { getServerUserSession } = await import("./getServerUserSession");
+  const user = await getServerUserSession(request);
+  return user?.tenantId ?? null;
+}
+
+export async function getCurrentTenantId(): Promise<number | null> {
+  // This is a legacy function - should be called with request context
+  // For now, return null to indicate it needs proper context
+  return null;
+}
