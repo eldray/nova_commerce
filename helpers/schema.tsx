@@ -390,10 +390,78 @@ export interface PlanFeatures {
   createdAt: Generated<Timestamp>;
 }
 
+export type CouponType = "fixed_amount" | "free_shipping" | "percentage";
+export type CouponStatus = "active" | "expired" | "inactive";
+export type ReviewStatus = "approved" | "pending" | "rejected";
+
+export interface Coupons {
+  id: Generated<number>;
+  tenantId: number;
+  code: string;
+  name: string;
+  description: string | null;
+  type: CouponType;
+  value: Numeric;
+  minPurchaseAmount: Numeric | null;
+  maxDiscountAmount: Numeric | null;
+  usageLimit: number | null;
+  usageLimitPerUser: number | null;
+  usedCount: Generated<number>;
+  status: CouponStatus;
+  startsAt: Generated<Timestamp>;
+  expiresAt: Timestamp | null;
+  applicableProductIds: Generated<number[]>;
+  applicableCategoryIds: Generated<number[]>;
+  firstOrderOnly: Generated<boolean>;
+  createdByUserId: number | null;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+}
+
+export interface CouponUsages {
+  id: Generated<number>;
+  couponId: number;
+  orderId: number;
+  userId: number;
+  discountAmount: Numeric;
+  usedAt: Generated<Timestamp>;
+}
+
+export interface ProductReviews {
+  id: Generated<number>;
+  tenantId: number;
+  productId: number;
+  userId: number;
+  orderId: number | null;
+  rating: number;
+  title: string | null;
+  content: string;
+  status: ReviewStatus;
+  isVerifiedPurchase: Generated<boolean>;
+  helpfulCount: Generated<number>;
+  notHelpfulCount: Generated<number>;
+  merchantResponse: string | null;
+  merchantResponseAt: Timestamp | null;
+  respondedByUserId: number | null;
+  images: Generated<string[]>;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+}
+
+export interface ReviewHelpfulness {
+  id: Generated<number>;
+  reviewId: number;
+  userId: number;
+  isHelpful: boolean;
+  createdAt: Generated<Timestamp>;
+}
+
 export interface DB {
   auditLogs: AuditLogs;
   brands: Brands;
   categories: Categories;
+  couponUsages: CouponUsages;
+  coupons: Coupons;
   customerAddresses: CustomerAddresses;
   customers: Customers;
   deliveryZones: DeliveryZones;
@@ -407,8 +475,10 @@ export interface DB {
   paymentTransactions: PaymentTransactions;
   planFeatures: PlanFeatures;
   productImages: ProductImages;
+  productReviews: ProductReviews;
   products: Products;
   productVariants: ProductVariants;
+  reviewHelpfulness: ReviewHelpfulness;
   sessions: Sessions;
   stores: Stores;
   subscriptionInvoices: SubscriptionInvoices;
@@ -425,4 +495,7 @@ export const TenantStatusArrayValues: [TenantStatus, ...TenantStatus[]] = ["acti
 export const TenantRoleArrayValues: [TenantRole, ...TenantRole[]] = ["admin", "inventory", "manager", "owner", "sales", "support"];
 export const ProductStatusArrayValues: [ProductStatus, ...ProductStatus[]] = ["active", "archived", "draft"];
 export const InventoryMovementTypeArrayValues: [InventoryMovementType, ...InventoryMovementType[]] = ["adjustment", "reservation_release", "restock", "return", "sale"];
+export const CouponTypeArrayValues: [CouponType, ...CouponType[]] = ["fixed_amount", "free_shipping", "percentage"];
+export const CouponStatusArrayValues: [CouponStatus, ...CouponStatus[]] = ["active", "expired", "inactive"];
+export const ReviewStatusArrayValues: [ReviewStatus, ...ReviewStatus[]] = ["approved", "pending", "rejected"];
 

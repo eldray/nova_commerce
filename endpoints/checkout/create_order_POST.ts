@@ -81,7 +81,73 @@ export async function handle(request: Request) {
                 deliveryFee = freeThreshold !== null && subtotal >= freeThreshold ? 0 : Number(zone.fee);
             }
 
-            const total = subtotal + deliveryFee;
+            // Handle coupon code if provided
+            let discountAmount = 0;
+            let appliedCouponCode: string | undefined;
+            let appliedCouponId: number | null = null;
+
+            if (input.couponCode) {
+                const code = input.couponCode.toUpperCase().trim();
+                const now = new Date();
+
+                const coupon = await trx
+                    .selectFrom("coupons")
+                    .where("tenantId", "=", input.tenantId)
+                    .where("code", "=", code)
+                    .selectAll()
+                    .executeTakeFirst();
+
+                if (coupon && coupon.status === "active") {
+                    // Check date validity
+                    const startsAt = new Date(coupon.startsAt);
+                    const expiresAt = coupon.expiresAt ? new Date(coupon.expiresAt) : null;
+
+                    if (startsAt <= now && (!expiresAt || expiresAt > now)) {
+                        // Check usage limits
+                        if (!coupon.usageLimit || coupon.usedCount < coupon.usageLimit) {
+                            // Check applicable products/categories
+                            const hasApplicableProduct =
+                                !coupon.applicableProductIds ||
+                                coupon.applicableProductIds.length === 0 ||
+                                productIds.some((pid) => coupon.applicableProductIds!.includes(pid));
+
+                            if (hasApplicableProduct) {
+                                // Check minimum purchase amount
+                                const minPurchase = coupon.minPurchaseAmount
+                                    ? Number(coupon.minPurchaseAmount)
+                                    : 0;
+
+                                if (subtotal >= minPurchase) {
+                                    // Calculate discount
+                                    const couponValue = Number(coupon.value);
+
+                                    if (coupon.type === "percentage") {
+                                        discountAmount = (subtotal * couponValue) / 100;
+
+                                        if (coupon.maxDiscountAmount) {
+                                            const maxDiscount = Number(coupon.maxDiscountAmount);
+                                            discountAmount = Math.min(discountAmount, maxDiscount);
+                                        }
+                                    } else if (coupon.type === "fixed_amount") {
+                                        discountAmount = couponValue;
+                                    }
+                                    // Free shipping handled separately
+
+                                    // Don't allow discount to exceed subtotal
+                                    if (discountAmount > subtotal) {
+                                        discountAmount = subtotal;
+                                    }
+
+                                    appliedCouponCode = coupon.code;
+                                    appliedCouponId = coupon.id;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            const total = subtotal + deliveryFee - discountAmount;
             const orderNumber = `NC-${Date.now().toString(36).toUpperCase()}-${nanoid(4).toUpperCase()}`;
 
             const order = await trx
@@ -93,6 +159,7 @@ export async function handle(request: Request) {
                     paymentStatus: "unpaid",
                     subtotal: subtotal.toFixed(2),
                     deliveryFee: deliveryFee.toFixed(2),
+                    discountAmount: discountAmount.toFixed(2),
                     total: total.toFixed(2),
                     deliveryZoneId: input.deliveryZoneId ?? null,
                     recipientName: input.recipientName,
@@ -101,9 +168,43 @@ export async function handle(request: Request) {
                     deliveryCity: input.deliveryCity,
                     guestEmail: input.guestEmail ?? null,
                     notes: input.notes ?? null,
+                    couponCode: appliedCouponCode ?? null,
+                    couponId: appliedCouponId,
                 })
                 .returning(["id", "orderNumber", "total"])
                 .executeTakeFirstOrThrow();
+
+            // Record coupon usage if applied
+            if (appliedCouponId && appliedCouponCode) {
+                // Get user ID from context or guest email
+                const userId = input.guestEmail
+                    ? await trx
+                          .selectFrom("users")
+                          .where("email", "=", input.guestEmail)
+                          .select("id")
+                          .executeTakeFirst()
+                          .then((u) => u?.id || null)
+                    : null;
+
+                if (userId) {
+                    await trx
+                        .insertInto("coupon_usages")
+                        .values({
+                            couponId: appliedCouponId,
+                            orderId: order.id,
+                            userId,
+                            discountAmount: discountAmount.toFixed(2),
+                        })
+                        .execute();
+                }
+
+                // Increment coupon usage count
+                await trx
+                    .updateTable("coupons")
+                    .set({ usedCount: db.fn("used_count + 1") as any })
+                    .where("id", "=", appliedCouponId)
+                    .execute();
+            }
 
             for (const item of lineItems) {
                 await trx
@@ -144,7 +245,7 @@ export async function handle(request: Request) {
                 .values({ orderId: order.id, status: "pending", note: "Order placed" })
                 .execute();
 
-            return order;
+            return { ...order, discountAmount: discountAmount.toFixed(2), couponCode: appliedCouponCode };
         });
 
         return new Response(
@@ -152,6 +253,8 @@ export async function handle(request: Request) {
                 orderId: result.id,
                 orderNumber: result.orderNumber,
                 total: result.total,
+                discountAmount: result.discountAmount,
+                couponCode: result.couponCode,
             } satisfies OutputType)
         );
     } catch (error) {

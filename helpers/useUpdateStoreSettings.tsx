@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import superjson from "superjson";
 
@@ -11,7 +12,7 @@ export const schema = z.object({
 export type InputType = z.infer<typeof schema>;
 export type OutputType = { success: boolean };
 
-export async function updateStoreSettings(input: InputType): Promise<OutputType> {
+async function updateStoreSettings(input: InputType): Promise<OutputType> {
   const res = await fetch("/api/settings/store-settings-update", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -25,4 +26,15 @@ export async function updateStoreSettings(input: InputType): Promise<OutputType>
   }
 
   return json as OutputType;
+}
+
+export function useUpdateStoreSettings() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (variables: InputType) => updateStoreSettings(variables),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["store"] });
+    },
+  });
 }
