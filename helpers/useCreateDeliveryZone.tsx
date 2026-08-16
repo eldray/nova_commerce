@@ -1,5 +1,6 @@
+// helpers/useCreateDeliveryZone.tsx
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "../apiRequest";
+import { apiClient } from "./apiClient"; // Updated import to use existing file
 
 interface CreateDeliveryZoneInput {
   name: string;
@@ -14,12 +15,11 @@ export function useCreateDeliveryZone() {
 
   return useMutation({
     mutationFn: async (data: CreateDeliveryZoneInput) => {
-      const res = await apiRequest("/endpoints/delivery-zones/create_POST.ts", {
+      // Updated to use apiClient with correct endpoint path
+      return await apiClient("/_api/endpoints/delivery-zones/create_POST.ts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      return res;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["deliveryZones"] });

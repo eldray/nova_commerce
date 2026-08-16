@@ -10,7 +10,7 @@ export function useCustomers(tenantId: number | undefined, page = 1, limit = 20,
                 limit: limit.toString(),
             });
             if (search) params.set("search", search);
-            
+
             const result = await fetch(`/_api/customers/list?${params}`, {
                 method: "GET",
                 credentials: "include",

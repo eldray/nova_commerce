@@ -5,6 +5,9 @@ import { getServerUserSession } from "../../helpers/getServerUserSession";
 import { getCurrentTenantId, requireTenantPermission } from "../../helpers/tenantContext";
 import { encryptSecret } from "../../helpers/encryption";
 
+export type InputType = typeof schema._input;
+export type OutputType = typeof schema._output;
+
 export async function handle(request: Request) {
     try {
         const user = await getServerUserSession(request);
@@ -94,4 +97,21 @@ export async function handle(request: Request) {
         const message = error instanceof Error ? error.message : "Failed to save payment settings";
         return new Response(superjson.stringify({ error: message }), { status: 400 });
     }
+}
+
+// Client-side function to call the API
+export async function updatePaymentCredentials(input: InputType): Promise<OutputType> {
+    const res = await fetch("/api/settings/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: superjson.stringify(input),
+    });
+
+    const json = superjson.parse(await res.text());
+
+    if (!res.ok) {
+        throw new Error(json.error || "Failed to update payment credentials");
+    }
+
+    return json as OutputType;
 }

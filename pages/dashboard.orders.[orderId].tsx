@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { Helmet } from "react-helmet";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Package, User, CreditCard, Clock, CheckCircle } from "lucide-react";
-import { useOrderDetail, useUpdateOrderStatus } from "../../helpers/useOrders";
-import { Badge } from "../../components/Badge";
-import { Button } from "../../components/Button";
-import { Skeleton } from "../../components/Skeleton";
+import { useOrderDetail, useUpdateOrderStatus } from "../helpers/useOrders";
+import { Badge } from "../components/Badge";
+import { Button } from "../components/Button";
+import { Skeleton } from "../components/Skeleton";
 import styles from "./dashboard.orders.[orderId].module.css";
 
 const formatMoney = (amount: string, currency: string) =>
@@ -258,8 +258,8 @@ export default function DashboardOrderDetailPage() {
                             </label>
                         ))}
                     </div>
-                    <Button 
-                        onClick={handleStatusUpdate} 
+                    <Button
+                        onClick={handleStatusUpdate}
                         disabled={updateStatus.isPending || selectedStatus === data?.order.status}
                         className={styles.updateButton}
                     >

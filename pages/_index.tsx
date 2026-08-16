@@ -1,216 +1,383 @@
 import React from "react";
 import { Helmet } from "react-helmet";
-import { Link, useSearchParams } from "react-router-dom";
-import { ArrowRight, Truck, ShieldCheck, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
+import { Link } from "react-router-dom";
+import {
+  ArrowRight,
+  Store,
+  CreditCard,
+  Package,
+  MapPin,
+  BarChart3,
+  Users2,
+  CheckCircle2,
+  Menu,
+  X,
+} from "lucide-react";
 import { Button } from "../components/Button";
-import { ProductCard, ProductCardData } from "../components/ProductCard";
-import styles from "./_index.module.css";
+import { ThemeModeSwitch } from "../components/ThemeModeSwitch";
 import { useAuth } from "../helpers/useAuth";
-import { usePublicProducts } from "../helpers/usePublicProducts";
-import { Skeleton } from "../components/Skeleton";
-import { Package } from "lucide-react";
+import styles from "./_index.module.css";
 
-const formatMoney = (amount: number | string, currency: string = "GHS") =>
-  new Intl.NumberFormat("en-GH", { style: "currency", currency, maximumFractionDigits: 2 }).format(
-    Number(amount)
-  );
+const NAV_LINKS = [
+  { label: "Features", to: "#features" },
+  { label: "How it works", to: "#how-it-works" },
+  { label: "Pricing", to: "#pricing" },
+];
 
-const categories = [
-  { name: "Dresses", slug: "dresses", image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&q=80" },
-  { name: "Menswear", slug: "menswear", image: "https://images.unsplash.com/photo-1617137968427-85924c800a22?w=400&q=80" },
-  { name: "Footwear", slug: "footwear", image: "https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=400&q=80" },
-  { name: "Accessories", slug: "accessories", image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&q=80" },
+const features = [
+  {
+    icon: Store,
+    title: "Store builder",
+    description:
+      "Launch a fully branded storefront without writing code. Pick a theme, add your logo and colors, and go live in minutes.",
+  },
+  {
+    icon: Package,
+    title: "Product & inventory",
+    description:
+      "Manage products, variants, categories and stock levels from one dashboard, with low-stock alerts built in.",
+  },
+  {
+    icon: CreditCard,
+    title: "Ghana payments",
+    description:
+      "Accept Mobile Money and card payments through Paystack and Hubtel — built for the way Ghanaians actually pay.",
+  },
+  {
+    icon: MapPin,
+    title: "Delivery zones",
+    description:
+      "Set delivery fees and timelines by zone, from Accra and Kumasi to nationwide shipping and pickup.",
+  },
+  {
+    icon: BarChart3,
+    title: "Analytics dashboard",
+    description:
+      "Track revenue, orders and top products with real-time charts and date-range filters.",
+  },
+  {
+    icon: Users2,
+    title: "Staff & roles",
+    description:
+      "Invite your team with granular permissions for sales, inventory, support and more.",
+  },
+];
+
+const steps = [
+  {
+    number: "01",
+    title: "Create your account",
+    description: "Register your business in under a minute — no credit card required.",
+  },
+  {
+    number: "02",
+    title: "Set up your store",
+    description:
+      "Add your branding, connect payments, set delivery zones and list your first product through our guided wizard.",
+  },
+  {
+    number: "03",
+    title: "Start selling",
+    description:
+      "Publish your storefront and start accepting orders from customers across Ghana.",
+  },
+];
+
+const pricingPlans = [
+  {
+    name: "Starter",
+    price: "Free",
+    period: "",
+    description: "For new businesses testing the waters.",
+    features: ["Up to 25 products", "1 staff account", "MoMo & card payments", "Community support"],
+    cta: "Start free",
+    highlighted: false,
+  },
+  {
+    name: "Professional",
+    price: "GH₵150",
+    period: "/month",
+    description: "For growing stores ready to scale up.",
+    features: [
+      "Unlimited products",
+      "Coupons & reviews",
+      "Up to 10 staff accounts",
+      "Priority support",
+    ],
+    cta: "Get started",
+    highlighted: true,
+  },
+  {
+    name: "Business",
+    price: "GH₵350",
+    period: "/month",
+    description: "For established brands with custom needs.",
+    features: [
+      "Custom domain",
+      "Advanced analytics",
+      "Unlimited staff accounts",
+      "Dedicated support",
+    ],
+    cta: "Get started",
+    highlighted: false,
+  },
 ];
 
 const testimonials = [
-  { name: "Abena K.", city: "Accra", quote: "Delivery was fast and the fabric quality is even better than the photos. My go-to store now." },
-  { name: "Kwame O.", city: "Kumasi", quote: "Paid with MoMo, order arrived in two days. Sizing chart was spot on too." },
-  { name: "Efua D.", city: "Takoradi", quote: "Customer support replied on WhatsApp within minutes. Felt like shopping with a friend." },
+  {
+    name: "Abena K.",
+    role: "Founder, Abena's Wardrobe — Accra",
+    quote:
+      "I had a working storefront the same afternoon I signed up. Setting up Mobile Money payments took five minutes.",
+  },
+  {
+    name: "Kwame O.",
+    role: "Owner, KO Electronics — Kumasi",
+    quote:
+      "The delivery zone setup meant I could finally charge fair rates outside Kumasi instead of guessing.",
+  },
+  {
+    name: "Efua D.",
+    role: "Founder, Efua Naturals — Takoradi",
+    quote:
+      "The dashboard tells me exactly what's selling. I stopped restocking products nobody wanted.",
+  },
 ];
 
 export default function IndexPage() {
-  const { user } = useAuth();
-  const [searchParams] = useSearchParams();
-  const storeSlug = searchParams.get("store");
-  
-  // Fetch products if we have a store context
-  const { data: productsData, isFetching } = usePublicProducts();
-  
-  const featuredProducts: ProductCardData[] = (productsData?.products || []).slice(0, 4).map(p => ({
-    slug: p.slug,
-    name: p.name,
-    imageUrl: p.imageUrl || "",
-    price: Number(p.salePrice ?? p.price),
-    compareAtPrice: p.salePrice ? Number(p.price) : undefined,
-    badge: p.salePrice ? "Sale" : p.stockQuantity <= 0 ? "Out of Stock" : undefined,
-    rating: 4.5,
-    reviewCount: Math.floor(Math.random() * 50) + 10,
-  }));
-
-  const bestSellers: ProductCardData[] = (productsData?.products || [])
-    .sort((a, b) => b.stockQuantity - a.stockQuantity)
-    .slice(0, 4)
-    .map(p => ({
-      slug: p.slug,
-      name: p.name,
-      imageUrl: p.imageUrl || "",
-      price: Number(p.salePrice ?? p.price),
-      badge: "Bestseller",
-      rating: 4.7,
-      reviewCount: Math.floor(Math.random() * 80) + 20,
-    }));
+  const { authState } = useAuth();
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const isAuthenticated = authState.type === "authenticated";
 
   return (
-    <>
+    <div className={styles.page}>
       <Helmet>
-        <title>{storeSlug ? `${storeSlug} — Nova Commerce` : "Nova Fashion Ghana — Contemporary African Fashion"}</title>
+        <title>Nova Commerce — Launch your online store in Ghana</title>
         <meta
           name="description"
-          content="Shop contemporary African-inspired fashion, footwear and accessories. Nationwide delivery across Ghana, pay by Mobile Money or card."
+          content="Nova Commerce is the all-in-one platform for Ghanaian businesses to launch an online store, accept Mobile Money and card payments, and manage orders and delivery."
         />
       </Helmet>
 
-      {/* Top bar with auth links */}
-      <div className={styles.topBar}>
-        <div className={styles.topBarContent}>
-          <span className={styles.topBarText}>Free delivery on orders over GH₵500</span>
-          <div className={styles.topBarActions}>
-            {user ? (
-              <>
-                <span className={styles.topBarUser}>Hi, {user.displayName}</span>
-                <Link to="/customer-home" className={styles.topBarLink}>My Account</Link>
-                <Link to="/dashboard" className={styles.topBarLink}>Dashboard</Link>
-              </>
+      <header className={styles.header}>
+        <div className={styles.headerInner}>
+          <Link to="/" className={styles.logo}>
+            Nova Commerce
+          </Link>
+
+          <nav className={styles.nav}>
+            {NAV_LINKS.map((link) => (
+              <a key={link.to} href={link.to} className={styles.navLink}>
+                {link.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className={styles.headerActions}>
+            <ThemeModeSwitch />
+            {isAuthenticated ? (
+              <Button asChild>
+                <Link to="/dashboard">Go to dashboard</Link>
+              </Button>
             ) : (
               <>
-                <Link to="/login" className={styles.topBarLink}>Log in</Link>
-                <Link to="/register" className={styles.topBarLink}>Sign up</Link>
+                <Button variant="ghost" asChild className={styles.desktopOnly}>
+                  <Link to="/login">Log in</Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/register">Get started</Link>
+                </Button>
               </>
             )}
+            <button
+              className={styles.menuButton}
+              onClick={() => setMobileOpen((v) => !v)}
+              aria-label="Toggle menu"
+            >
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
           </div>
         </div>
-      </div>
 
-      <section className={styles.hero}>
-        <div className={styles.heroContent}>
-          <span className={styles.heroEyebrow}>New Season Arrivals</span>
-          <h1 className={styles.heroTitle}>Fashion rooted in Ghana, styled for now.</h1>
-          <p className={styles.heroSubtitle}>
-            Contemporary pieces crafted with local textiles — delivered nationwide, pay by Mobile Money or card.
-          </p>
-          <div className={styles.heroActions}>
-            <Button size="lg" asChild>
-              <Link to="/shop">
-                Shop the collection <ArrowRight size={18} />
+        {mobileOpen && (
+          <nav className={styles.mobileNav}>
+            {NAV_LINKS.map((link) => (
+              <a
+                key={link.to}
+                href={link.to}
+                className={styles.mobileNavLink}
+                onClick={() => setMobileOpen(false)}
+              >
+                {link.label}
+              </a>
+            ))}
+            {!isAuthenticated && (
+              <Link to="/login" className={styles.mobileNavLink} onClick={() => setMobileOpen(false)}>
+                Log in
+              </Link>
+            )}
+          </nav>
+        )}
+      </header>
+
+      <main>
+        <section className={styles.hero}>
+          <div className={styles.heroContent}>
+            <span className={styles.heroEyebrow}>Built for Ghanaian businesses</span>
+            <h1 className={styles.heroTitle}>Launch your online store in minutes.</h1>
+            <p className={styles.heroSubtitle}>
+              Nova Commerce gives you a branded storefront, Mobile Money & card payments,
+              inventory, delivery zones and analytics — all in one platform, set up in an
+              afternoon.
+            </p>
+            <div className={styles.heroActions}>
+              {isAuthenticated ? (
+                <Button size="lg" asChild>
+                  <Link to="/dashboard">
+                    Go to dashboard <ArrowRight size={18} />
+                  </Link>
+                </Button>
+              ) : (
+                <>
+                  <Button size="lg" asChild>
+                    <Link to="/register">
+                      Start selling free <ArrowRight size={18} />
+                    </Link>
+                  </Button>
+                  <Button size="lg" variant="outline" asChild>
+                    <Link to="/login">Log in</Link>
+                  </Button>
+                </>
+              )}
+            </div>
+            <p className={styles.heroNote}>No credit card required to get started.</p>
+          </div>
+          <div className={styles.heroImageWrap}>
+            <img
+              src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=900&q=80"
+              alt="Ghanaian small business owner managing an online store"
+              className={styles.heroImage}
+            />
+          </div>
+        </section>
+
+        <section id="features" className={styles.section}>
+          <div className={styles.sectionIntro}>
+            <h2 className={styles.sectionTitle}>Everything you need to sell online</h2>
+            <p className={styles.sectionSubtitle}>
+              One platform for your storefront, payments, inventory and delivery.
+            </p>
+          </div>
+          <div className={styles.featureGrid}>
+            {features.map((feature) => (
+              <div key={feature.title} className={styles.featureCard}>
+                <div className={styles.featureIcon}>
+                  <feature.icon size={22} />
+                </div>
+                <h3 className={styles.featureTitle}>{feature.title}</h3>
+                <p className={styles.featureDescription}>{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="how-it-works" className={styles.stepsSection}>
+          <div className={styles.sectionIntro}>
+            <h2 className={styles.sectionTitle}>Up and running in three steps</h2>
+          </div>
+          <div className={styles.stepsGrid}>
+            {steps.map((step) => (
+              <div key={step.number} className={styles.stepCard}>
+                <span className={styles.stepNumber}>{step.number}</span>
+                <h3 className={styles.stepTitle}>{step.title}</h3>
+                <p className={styles.stepDescription}>{step.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="pricing" className={styles.section}>
+          <div className={styles.sectionIntro}>
+            <h2 className={styles.sectionTitle}>Simple, transparent pricing</h2>
+            <p className={styles.sectionSubtitle}>
+              Start free. Upgrade as your store grows.
+            </p>
+          </div>
+          <div className={styles.pricingGrid}>
+            {pricingPlans.map((plan) => (
+              <div
+                key={plan.name}
+                className={`${styles.pricingCard} ${plan.highlighted ? styles.pricingCardHighlighted : ""}`}
+              >
+                {plan.highlighted && <span className={styles.pricingBadge}>Most popular</span>}
+                <h3 className={styles.pricingName}>{plan.name}</h3>
+                <div className={styles.pricingPrice}>
+                  {plan.price}
+                  {plan.period && <span className={styles.pricingPeriod}>{plan.period}</span>}
+                </div>
+                <p className={styles.pricingDescription}>{plan.description}</p>
+                <ul className={styles.pricingFeatures}>
+                  {plan.features.map((f) => (
+                    <li key={f}>
+                      <CheckCircle2 size={16} /> {f}
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  size="lg"
+                  variant={plan.highlighted ? "primary" : "outline"}
+                  className={styles.pricingCta}
+                  asChild
+                >
+                  <Link to="/register">{plan.cta}</Link>
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionIntro}>
+            <h2 className={styles.sectionTitle}>Trusted by Ghanaian merchants</h2>
+          </div>
+          <div className={styles.testimonialGrid}>
+            {testimonials.map((t) => (
+              <div key={t.name} className={styles.testimonialCard}>
+                <p className={styles.testimonialQuote}>"{t.quote}"</p>
+                <span className={styles.testimonialAuthor}>{t.name}</span>
+                <span className={styles.testimonialRole}>{t.role}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.banner}>
+          <div className={styles.bannerContent}>
+            <h2 className={styles.bannerTitle}>Ready to launch your store?</h2>
+            <p className={styles.bannerSubtitle}>
+              Join Ghanaian businesses already selling on Nova Commerce.
+            </p>
+            <Button size="lg" variant="secondary" asChild>
+              <Link to={isAuthenticated ? "/dashboard" : "/register"}>
+                {isAuthenticated ? "Go to dashboard" : "Start selling free"}
               </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link to="/categories">Browse categories</Link>
-            </Button>
           </div>
-        </div>
-        <div className={styles.heroImageWrap}>
-          <img
-            src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=900&q=80"
-            alt="Model wearing Nova Fashion Ghana collection"
-            className={styles.heroImage}
-          />
-        </div>
-      </section>
+        </section>
+      </main>
 
-      <section className={styles.trustBar}>
-        <div className={styles.trustItem}>
-          <Truck size={20} /> Nationwide delivery
+      <footer className={styles.footer}>
+        <div className={styles.footerInner}>
+          <span className={styles.footerLogo}>Nova Commerce</span>
+          <nav className={styles.footerNav}>
+            <a href="#features" className={styles.footerLink}>Features</a>
+            <a href="#pricing" className={styles.footerLink}>Pricing</a>
+            <Link to="/login" className={styles.footerLink}>Log in</Link>
+            <Link to="/register" className={styles.footerLink}>Sign up</Link>
+          </nav>
+          <span className={styles.footerCopy}>© {new Date().getFullYear()} Nova Commerce. All rights reserved.</span>
         </div>
-        <div className={styles.trustItem}>
-          <ShieldCheck size={20} /> Secure MoMo & card payment
-        </div>
-        <div className={styles.trustItem}>
-          <RotateCcw size={20} /> Easy 7-day returns
-        </div>
-      </section>
-
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Shop by Category</h2>
-        <div className={styles.categoryGrid}>
-          {categories.map((cat) => (
-            <Link key={cat.slug} to={`/shop?category=${cat.slug}`} className={styles.categoryCard}>
-              <img src={cat.image} alt={cat.name} className={styles.categoryImage} />
-              <span className={styles.categoryName}>{cat.name}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>Featured Products</h2>
-          <Link to="/shop" className={styles.sectionLink}>View all <ArrowRight size={14} /></Link>
-        </div>
-        
-        {isFetching ? (
-          <div className={styles.productGrid}>
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className={styles.cardSkeleton} />
-            ))}
-          </div>
-        ) : featuredProducts.length > 0 ? (
-          <div className={styles.productGrid}>
-            {featuredProducts.map((p) => (
-              <ProductCard key={p.slug} product={p} />
-            ))}
-          </div>
-        ) : (
-          <div className={styles.emptyState}>
-            <Package size={48} className={styles.emptyIcon} />
-            <h3>No products available yet</h3>
-            <p>Check back soon for amazing items!</p>
-          </div>
-        )}
-      </section>
-
-      <section className={styles.banner}>
-        <div className={styles.bannerContent}>
-          <h2 className={styles.bannerTitle}>End of Season Sale</h2>
-          <p className={styles.bannerSubtitle}>Up to 30% off selected styles — while stocks last.</p>
-          <Button size="lg" variant="secondary" asChild>
-            <Link to="/shop?filter=sale">Shop the sale</Link>
-          </Button>
-        </div>
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>Best Sellers</h2>
-          <Link to="/shop?filter=bestsellers" className={styles.sectionLink}>View all <ArrowRight size={14} /></Link>
-        </div>
-        
-        {isFetching ? (
-          <div className={styles.productGrid}>
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className={styles.cardSkeleton} />
-            ))}
-          </div>
-        ) : bestSellers.length > 0 ? (
-          <div className={styles.productGrid}>
-            {bestSellers.map((p) => (
-              <ProductCard key={p.slug} product={p} />
-            ))}
-          </div>
-        ) : null}
-      </section>
-
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>What customers say</h2>
-        <div className={styles.testimonialGrid}>
-          {testimonials.map((t) => (
-            <div key={t.name} className={styles.testimonialCard}>
-              <p className={styles.testimonialQuote}>"{t.quote}"</p>
-              <span className={styles.testimonialAuthor}>{t.name} · {t.city}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-    </>
+      </footer>
+    </div>
   );
 }

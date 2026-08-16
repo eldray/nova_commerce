@@ -4,10 +4,11 @@ import { Search, ShoppingBag, Menu, X, Heart } from "lucide-react";
 import { Button } from "./Button";
 import { Input } from "./Input";
 import { ThemeModeSwitch } from "./ThemeModeSwitch";
+import { useCart } from "../helpers/CartContext";
 import styles from "./StorefrontHeader.module.css";
 
 const NAV_LINKS = [
-  { label: "Home", to: "/" },
+  { label: "Home", to: "/store" },
   { label: "Shop", to: "/shop" },
   { label: "Categories", to: "/categories" },
   { label: "About", to: "/about" },
@@ -15,10 +16,10 @@ const NAV_LINKS = [
 
 interface StorefrontHeaderProps {
   storeName?: string;
-  cartCount?: number;
 }
 
-export const StorefrontHeader = ({ storeName = "Nova Fashion Ghana", cartCount = 0 }: StorefrontHeaderProps) => {
+export const StorefrontHeader = ({ storeName = "Nova Fashion Ghana" }: StorefrontHeaderProps) => {
+  const { itemCount } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -36,7 +37,7 @@ export const StorefrontHeader = ({ storeName = "Nova Fashion Ghana", cartCount =
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
 
-        <Link to="/" className={styles.logo}>
+        <Link to="/store" className={styles.logo}>
           {storeName}
         </Link>
 
@@ -66,7 +67,7 @@ export const StorefrontHeader = ({ storeName = "Nova Fashion Ghana", cartCount =
           </Link>
           <Link to="/cart" className={styles.iconButton} aria-label="Cart">
             <ShoppingBag size={20} />
-            {cartCount > 0 && <span className={styles.cartBadge}>{cartCount}</span>}
+            {itemCount > 0 && <span className={styles.cartBadge}>{itemCount}</span>}
           </Link>
           <ThemeModeSwitch />
         </div>
