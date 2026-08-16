@@ -39,7 +39,6 @@ export default function ProductImageUploader({ productId, onUploadComplete }: Pr
         altText: `Product image ${new Date().toLocaleDateString()}`,
       },
       {
-        onProgress: (progress) => setUploadProgress(progress),
         onSuccess: () => {
           setUploadProgress(0);
           onUploadComplete?.();

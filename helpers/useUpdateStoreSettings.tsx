@@ -19,10 +19,10 @@ async function updateStoreSettings(input: InputType): Promise<OutputType> {
     body: superjson.stringify(input),
   });
 
-  const json = superjson.parse(await res.text());
+  const json = superjson.parse(await res.text()) as any;
 
   if (!res.ok) {
-    throw new Error(json.error || "Failed to update store settings");
+    throw new Error((json as any).error || "Failed to update store settings");
   }
 
   return json as OutputType;
