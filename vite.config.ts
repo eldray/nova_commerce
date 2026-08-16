@@ -20,7 +20,4 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['templates'],
   },
-  // Tell Vite to only process specific file types
-  include: ['**/*.tsx', '**/*.ts', '**/*.jsx', '**/*.js', '**/*.css', '**/*.html'],
-  exclude: ['templates/**', 'node_modules/**'],
 });

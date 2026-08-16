@@ -9,10 +9,10 @@ export async function apiRequest<T>(endpoint: string, options?: RequestInit): Pr
     },
   });
 
-  const json = superjson.parse(await res.text());
+  const json = superjson.parse(await res.text()) as any;
 
   if (!res.ok) {
-    throw new Error(json.error || "Request failed");
+    throw new Error((json as any).error || "Request failed");
   }
 
   return json as T;
