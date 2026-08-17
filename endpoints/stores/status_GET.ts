@@ -1,44 +1,45 @@
-import { z } from 'zod';
-import { createEndpoint } from '../../helpers/createEndpoint';
-import { db } from '../../helpers/db';
+import superjson from "superjson";
+import { db } from "../../helpers/db";
+import { getServerUserSession } from "../../helpers/getServerUserSession";
+import { requireTenantPermission } from "../../helpers/tenantContext";
 
-const querySchema = z.object({
-  storeId: z.string().optional(),
-});
+export type OutputType = {
+    id: number;
+    storeName: string;
+    subdomain: string;
+    isPublished: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+} | null;
 
-export const GET = createEndpoint(
-  {
-    method: 'GET',
-    querySchema,
-    requiredPermissions: ['stores.view'],
-  },
-  async (req, { user, query }) => {
-    const storeId = query.storeId ? parseInt(query.storeId) : undefined;
+export async function handle(request: Request) {
+    try {
+        const user = await getServerUserSession(request);
+        if (!user) {
+            return new Response(superjson.stringify({ error: "Unauthorized" }), { status: 401 });
+        }
 
-    let queryBuilder = db
-      .selectFrom('stores')
-      .select([
-        'id',
-        'name',
-        'slug',
-        'published',
-        'publish_date',
-        'unpublish_reason',
-        'created_at',
-        'updated_at',
-      ])
-      .where('tenant_id', '=', user.tenantId);
+        const tenantId = user.tenantId;
+        if (!tenantId) {
+            return new Response(superjson.stringify({ error: "No store selected" }), { status: 400 });
+        }
 
-    if (storeId) {
-      queryBuilder = queryBuilder.where('id', '=', storeId);
+        await requireTenantPermission(user.id, tenantId, "settings.view");
+
+        const store = await db
+            .selectFrom("stores")
+            .select(["id", "storeName", "subdomain", "isPublished", "createdAt", "updatedAt"])
+            .where("tenantId", "=", tenantId)
+            .executeTakeFirst();
+
+        if (!store) {
+            return new Response(superjson.stringify({ error: "Store not found" }), { status: 404 });
+        }
+
+        return new Response(superjson.stringify(store satisfies OutputType));
+    } catch (error) {
+        console.error("store_status error:", error);
+        const message = error instanceof Error ? error.message : "Failed to fetch store status";
+        return new Response(superjson.stringify({ error: message }), { status: 400 });
     }
-
-    const stores = await queryBuilder.execute();
-
-    if (storeId && stores.length === 0) {
-      throw new Error('Store not found');
-    }
-
-    return storeId ? stores[0] : stores;
-  }
-);
+}

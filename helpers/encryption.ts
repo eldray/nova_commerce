@@ -1,8 +1,9 @@
 import crypto from "crypto";
 
-// Fix: Use import.meta.env for Vite projects instead of process.env
-// Ensure you have VITE_ENCRYPTION_SECRET in your .env file
-const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_SECRET ?? "nova-commerce-secret-key-32-chars!!";
+// This module runs server-side (imported by payment endpoint handlers), so it must
+// read process.env, not import.meta.env (a browser/Vite-only global that doesn't
+// exist under Node). Matches ENCRYPTION_KEY as defined in .env.example.
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ?? "nova-commerce-secret-key-32-chars!!";
 const ALGORITHM = "aes-256-cbc";
 
 export function encryptSecret(text: string): string {

@@ -10,7 +10,8 @@
     "check": "tsc --noEmit",
     "db:seed": "tsx scripts/seed-demo-data.ts",
     "db:reset": "tsx scripts/reset-database.ts",
-    "db:create-admin": "tsx scripts/create-super-admin.ts"
+    "db:create-admin": "tsx scripts/create-super-admin.ts",
+    "server": "tsx server.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

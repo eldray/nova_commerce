@@ -1,73 +1,86 @@
-import { z } from 'zod';
-import { createEndpoint } from '../../helpers/createEndpoint';
-import { db } from '../../helpers/db';
+import { z } from "zod";
+import superjson from "superjson";
+import { db } from "../../helpers/db";
+import { getServerUserSession } from "../../helpers/getServerUserSession";
+import { requireTenantPermission } from "../../helpers/tenantContext";
 
-const requestSchema = z.object({
-  storeId: z.number().int().positive(),
-});
+const schema = z.object({});
 
-export const POST = createEndpoint(
-  {
-    method: 'POST',
-    bodySchema: requestSchema,
-    requiredPermissions: ['stores.manage'],
-  },
-  async (req, { user, body }) => {
-    const { storeId } = body;
+export type OutputType = {
+    success: boolean;
+    store: unknown;
+    message: string;
+};
 
-    // Verify store exists and belongs to user's tenant
-    const store = await db
-      .selectFrom('stores')
-      .selectAll()
-      .where('id', '=', storeId)
-      .where('tenant_id', '=', user.tenantId)
-      .executeTakeFirst();
+export async function handle(request: Request) {
+    try {
+        const user = await getServerUserSession(request);
+        if (!user) {
+            return new Response(superjson.stringify({ error: "Unauthorized" }), { status: 401 });
+        }
 
-    if (!store) {
-      throw new Error('Store not found');
+        const tenantId = user.tenantId;
+        if (!tenantId) {
+            return new Response(superjson.stringify({ error: "No store selected" }), { status: 400 });
+        }
+
+        await requireTenantPermission(user.id, tenantId, "store.publish");
+
+        const store = await db
+            .selectFrom("stores")
+            .selectAll()
+            .where("tenantId", "=", tenantId)
+            .executeTakeFirst();
+
+        if (!store) {
+            return new Response(superjson.stringify({ error: "Store not found" }), { status: 404 });
+        }
+
+        // Check prerequisites for publishing
+        const [productCount, categoryCount] = await Promise.all([
+            db
+                .selectFrom("products")
+                .select((eb) => eb.fn.count<number>("id").as("count"))
+                .where("tenantId", "=", tenantId)
+                .executeTakeFirst(),
+            db
+                .selectFrom("categories")
+                .select((eb) => eb.fn.count<number>("id").as("count"))
+                .where("tenantId", "=", tenantId)
+                .executeTakeFirst(),
+        ]);
+
+        const hasProducts = Number(productCount?.count ?? 0) > 0;
+        const hasCategories = Number(categoryCount?.count ?? 0) > 0;
+
+        if (!hasProducts || !hasCategories) {
+            return new Response(
+                superjson.stringify({
+                    error: "Store must have at least one product and one category to publish",
+                }),
+                { status: 400 }
+            );
+        }
+
+        const updatedStore = await db
+            .updateTable("stores")
+            .set({
+                isPublished: true,
+            })
+            .where("tenantId", "=", tenantId)
+            .returningAll()
+            .executeTakeFirst();
+
+        return new Response(
+            superjson.stringify({
+                success: true,
+                store: updatedStore,
+                message: "Store published successfully",
+            } satisfies OutputType)
+        );
+    } catch (error) {
+        console.error("publish_store error:", error);
+        const message = error instanceof Error ? error.message : "Failed to publish store";
+        return new Response(superjson.stringify({ error: message }), { status: 400 });
     }
-
-    // Check prerequisites for publishing
-    const [productCount, categoryCount] = await Promise.all([
-      db
-        .selectFrom('products')
-        .select((eb) => eb.fn.count<number>('id').as('count'))
-        .where('store_id', '=', storeId)
-        .where('deleted_at', 'is', null)
-        .executeTakeFirst(),
-      db
-        .selectFrom('categories')
-        .select((eb) => eb.fn.count<number>('id').as('count'))
-        .where('store_id', '=', storeId)
-        .where('deleted_at', 'is', null)
-        .executeTakeFirst(),
-    ]);
-
-    const hasProducts = Number(productCount?.count ?? 0) > 0;
-    const hasCategories = Number(categoryCount?.count ?? 0) > 0;
-
-    if (!hasProducts || !hasCategories) {
-      throw new Error(
-        'Store must have at least one product and one category to publish'
-      );
-    }
-
-    // Update store to published state
-    const updatedStore = await db
-      .updateTable('stores')
-      .set({
-        published: true,
-        publish_date: new Date(),
-        unpublish_reason: null,
-      })
-      .where('id', '=', storeId)
-      .returningAll()
-      .executeTakeFirst();
-
-    return {
-      success: true,
-      store: updatedStore,
-      message: 'Store published successfully',
-    };
-  }
-);
+}
