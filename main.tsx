@@ -5,6 +5,7 @@ import { GlobalContextProviders } from "./components/_globalContextProviders";
 
 // Page imports
 import LandingPage from "./pages/landing";
+import IndexPage from "./pages/_index";
 import LoginPage from "./pages/login";
 import RegisterPage from "./pages/register";
 import WishlistPage from "./pages/wishlist";
@@ -47,8 +48,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <Routes>
           {/* Public landing page */}
-          <Route path="/" element={<LandingPage />} />
-          
+          <Route path="/" element={<IndexPage />} />
+
           {/* Storefront routes */}
           <Route path="/shop" element={<StorefrontLayout><ShopPage /></StorefrontLayout>} />
           <Route path="/categories" element={<StorefrontLayout><CategoriesPage /></StorefrontLayout>} />

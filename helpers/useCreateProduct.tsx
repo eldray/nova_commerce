@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "../apiRequest";
+import { apiClient } from "./apiClient";
 
 interface CreateProductInput {
   name: string;
@@ -15,12 +15,10 @@ export function useCreateProduct() {
 
   return useMutation({
     mutationFn: async (data: CreateProductInput) => {
-      const res = await apiRequest("/endpoints/products/create_POST.ts", {
+      return await apiClient("/_api/endpoints/products/create_POST.ts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      return res;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });

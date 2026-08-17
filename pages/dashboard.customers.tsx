@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
 import { Users, Search } from "lucide-react";
-import { useCustomers } from "../../helpers/useCustomers";
-import { useMyStores } from "../../helpers/useMyStores";
-import { Skeleton } from "../../components/Skeleton";
+import { useCustomers } from "../helpers/useCustomers";
+import { useMyStores } from "../helpers/useMyStores";
+import { Skeleton } from "../components/Skeleton";
 import styles from "./dashboard.customers.module.css";
 
 const formatMoney = (amount: string, currency: string = "GHS") =>

@@ -2,8 +2,8 @@ import React from "react";
 import { Helmet } from "react-helmet";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, User, MapPin, ShoppingCart, Calendar, Phone, Mail } from "lucide-react";
-import { useCustomerDetail } from "../../helpers/useCustomers";
-import { Skeleton } from "../../components/Skeleton";
+import { useCustomerDetail } from "../helpers/useCustomers";
+import { Skeleton } from "../components/Skeleton";
 import styles from "./dashboard.customers.[customerId].module.css";
 
 const formatMoney = (amount: string, currency: string = "GHS") =>
