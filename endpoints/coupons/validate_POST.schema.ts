@@ -3,7 +3,7 @@ import { z } from "zod";
 export const schema = z.object({
   code: z.string().min(1),
   cartTotal: z.number().positive(),
-  userId: z.number().int().positive(),
+  userId: z.number().int().positive().optional(),
   productIds: z.array(z.number().int().positive()).optional().default([]),
   isFirstOrder: z.boolean().default(false),
 });
@@ -16,8 +16,9 @@ export type OutputType = {
     id: number;
     code: string;
     name: string;
-    type: "percentage" | "fixed_amount" | "free_shipping";
-    value: string;
+    description: string | null;
+    discountType: "percentage" | "fixed_amount" | "free_shipping";
+    discountValue: string;
     maxDiscountAmount: string | null;
   };
   discountAmount: string;

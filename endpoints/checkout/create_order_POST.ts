@@ -130,9 +130,10 @@ export async function handle(request: Request) {
                                         }
                                     } else if (coupon.type === "fixed_amount") {
                                         discountAmount = couponValue;
+                                    } else if (coupon.type === "free_shipping") {
+                                        // Free shipping - set delivery fee to 0
+                                        deliveryFee = 0;
                                     }
-                                    // Free shipping handled separately
-
                                     // Don't allow discount to exceed subtotal
                                     if (discountAmount > subtotal) {
                                         discountAmount = subtotal;

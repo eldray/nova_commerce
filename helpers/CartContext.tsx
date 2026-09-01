@@ -10,6 +10,13 @@ export interface CartItem {
     quantity: number;
 }
 
+export interface AppliedCoupon {
+    code: string;
+    discountType: 'percentage' | 'fixed' | 'free_shipping';
+    discountValue: number;
+    description?: string;
+}
+
 interface CartContextValue {
     items: CartItem[];
     addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
@@ -18,10 +25,16 @@ interface CartContextValue {
     clear: () => void;
     subtotal: number;
     itemCount: number;
+    appliedCoupon: AppliedCoupon | null;
+    applyCoupon: (coupon: AppliedCoupon) => void;
+    removeCoupon: () => void;
+    discountAmount: number;
+    totalAfterDiscount: number;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 const STORAGE_KEY = "nova-commerce-cart";
+const COUPON_STORAGE_KEY = "nova-commerce-coupon";
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     const [items, setItems] = useState<CartItem[]>(() => {
@@ -34,6 +47,16 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         }
     });
 
+    const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(() => {
+        if (typeof window === "undefined") return null;
+        try {
+            const raw = window.localStorage.getItem(COUPON_STORAGE_KEY);
+            return raw ? (JSON.parse(raw) as AppliedCoupon) : null;
+        } catch {
+            return null;
+        }
+    });
+
     useEffect(() => {
         try {
             window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
@@ -41,6 +64,18 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
             // ignore storage failures (private browsing, quota, etc.)
         }
     }, [items]);
+
+    useEffect(() => {
+        try {
+            if (appliedCoupon) {
+                window.localStorage.setItem(COUPON_STORAGE_KEY, JSON.stringify(appliedCoupon));
+            } else {
+                window.localStorage.removeItem(COUPON_STORAGE_KEY);
+            }
+        } catch {
+            // ignore storage failures
+        }
+    }, [appliedCoupon]);
 
     const addItem: CartContextValue["addItem"] = (item, quantity = 1) => {
         setItems((prev) => {
@@ -66,13 +101,52 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         setItems((prev) => prev.map((i) => (i.productId === productId ? { ...i, quantity } : i)));
     };
 
-    const clear = () => setItems([]);
+    const clear = () => {
+        setItems([]);
+        setAppliedCoupon(null);
+    };
+
+    const applyCoupon: CartContextValue["applyCoupon"] = (coupon) => {
+        setAppliedCoupon(coupon);
+    };
+
+    const removeCoupon: CartContextValue["removeCoupon"] = () => {
+        setAppliedCoupon(null);
+    };
+
+    const discountAmount = useMemo(() => {
+        if (!appliedCoupon) return 0;
+        
+        if (appliedCoupon.discountType === 'percentage') {
+            return subtotal * (appliedCoupon.discountValue / 100);
+        } else if (appliedCoupon.discountType === 'fixed') {
+            return Math.min(appliedCoupon.discountValue, subtotal);
+        }
+        return 0;
+    }, [appliedCoupon, subtotal]);
+
+    const totalAfterDiscount = useMemo(() => {
+        return Math.max(0, subtotal - discountAmount);
+    }, [subtotal, discountAmount]);
 
     const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.price * i.quantity, 0), [items]);
     const itemCount = useMemo(() => items.reduce((sum, i) => sum + i.quantity, 0), [items]);
 
     return (
-        <CartContext.Provider value={{ items, addItem, removeItem, setQuantity, clear, subtotal, itemCount }}>
+        <CartContext.Provider value={{ 
+            items, 
+            addItem, 
+            removeItem, 
+            setQuantity, 
+            clear, 
+            subtotal, 
+            itemCount,
+            appliedCoupon,
+            applyCoupon,
+            removeCoupon,
+            discountAmount,
+            totalAfterDiscount
+        }}>
             {children}
         </CartContext.Provider>
     );

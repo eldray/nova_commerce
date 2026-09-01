@@ -1,54 +1,174 @@
-# Nova Commerce — source export (Phase 1 of 14)
+# Nova Commerce — Multi-Tenant E-Commerce Platform
 
-This is the code I've written so far for the Nova Commerce multi-tenant e-commerce
-SaaS, exported directly from the Floot project (`8d8c5218-5ca6-46aa-ad05-3fd1a1381bd1`).
+A complete multi-tenant e-commerce SaaS platform built for Ghana, supporting both merchants (store owners) and customers with local payment integrations (Paystack, Hubtel Mobile Money).
 
-## What's in here
+## Quick Start
 
-- `database/001_multi_tenant_foundation.sql` — the full Postgres schema: tenants,
-  stores, RBAC roles (tenant_users), product catalog (products/variants/categories/
-  brands/images), inventory movements, audit log.
-- `helpers/schema.tsx` — the generated Kysely types matching that schema.
-- `helpers/permissions.tsx` + `helpers/tenantContext.tsx` — the RBAC/tenant-isolation
-  layer every backend endpoint is meant to go through.
-- `endpoints/onboarding/`, `endpoints/tenants/` — the two custom API routes built so
-  far (create a business + list a user's stores).
-- `endpoints/auth/`, `helpers/useAuth.tsx`, `helpers/getServerUserSession.tsx`,
-  `helpers/getSetServerSession.tsx`, `helpers/generatePasswordHash.tsx`, `helpers/db.tsx`
-  — Floot's seeded email/password + session auth (JWT-backed), included because the
-  rest of the app depends on it. Not modified except `helpers/User.tsx` (added the
-  `super_admin` role) and `components/PasswordRegisterForm.tsx` (added a
-  `redirectTo` prop).
-- `pages/` — storefront homepage (`_index.tsx`, demo store "Nova Fashion Ghana"),
-  `login.tsx`, `register.tsx`, `onboarding.business-info.tsx` (step 1 of the setup
-  wizard), `dashboard.tsx` (placeholder landing page proving the tenant/auth/RBAC
-  loop end-to-end).
-- `components/` — custom UI: `StorefrontHeader/Footer/Layout`, `ProductCard`,
-  `WhatsAppButton`, `AuthLayout`, plus modified `ProtectedRoute` and
-  `_globalContextProviders`.
-- `base.css` — the full design-token system (light + dark) used throughout.
+### Prerequisites
+- Node.js 18+ 
+- PostgreSQL 14+
+- npm or yarn
 
-## What's NOT in here
+### 1. Install Dependencies
+```bash
+npm install
+```
 
-This is application source only — **not a runnable standalone project**. It's
-missing everything Floot's own build pipeline provides and that isn't exposed
-through the MCP file-listing API:
+### 2. Set Up Database
+Make sure PostgreSQL is running, then set up your database:
 
-- `package.json`, `vite.config`, `index.html`, router/entry setup
-- The ~150-file shared UI kit these files import from (`components/Button.tsx`,
-  `Input.tsx`, `Form.tsx`, `Select.tsx`, `Dialog.tsx`, etc. — Floot's pre-seeded
-  shadcn-style component library)
-- The live Postgres database itself (the SQL file is the schema, not a running DB)
+```bash
+# Create database
+createdb nova_commerce
 
-To get something you can actually `npm install && npm run dev`, use Floot's own
-**"Get Code!"** export from the project menu (packages everything above into a
-runnable zip) and/or the pg_dump from the database cog icon — I called these out
-because at last check code export may be gated behind a paid tier there.
+# Or update DATABASE_URL in .env if you have a different connection string
+```
 
-## Where this leaves off
+### 3. Run Complete Setup
+This will run all migrations and seed demo data including users, products, coupons, and reviews:
 
-Phase 1–2 of the original 14-phase plan (architecture/DB + auth/multi-tenancy/RBAC)
-is done. Still to build: merchant dashboard, product catalog UI, storefront
-cart/checkout, Ghana payments (Paystack/Hubtel), orders/delivery, customers/coupons,
-analytics, homepage builder/themes, subscriptions, super admin, custom domains,
-hardening/testing.
+```bash
+npm run setup
+```
+
+**Optional:** Force reset everything and re-seed:
+```bash
+npm run setup -- --force
+```
+
+### 4. Start Development Server
+```bash
+npm run dev
+```
+
+Visit:
+- **Dashboard**: http://localhost:5173/dashboard
+- **Store**: http://localhost:5173/store/nova-fashion
+
+### Demo Credentials
+- **Email**: admin@novafashion.com
+- **Password**: password123
+
+## Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview production build |
+| `npm run check` | TypeScript type checking |
+| `npm run setup` | **Complete setup: migrations + seed data** |
+| `npm run db:seed` | Seed demo data only |
+| `npm run db:reset` | Reset database (requires --force) |
+| `npm run server` | Start production server |
+
+## What's Included
+
+### Database Tables
+- ✅ Users & Authentication
+- ✅ Multi-tenant Architecture (Tenants, Stores)
+- ✅ RBAC (6 merchant roles: owner, admin, manager, sales, inventory, support)
+- ✅ Product Catalog (Products, Variants, Categories, Brands, Images)
+- ✅ Inventory Management with Audit Trail
+- ✅ Orders & Customers
+- ✅ Payments (Paystack, Hubtel integration ready)
+- ✅ **Coupons & Discount Codes**
+- ✅ **Product Reviews & Ratings**
+- ✅ Subscriptions & Billing
+- ✅ Delivery Zones
+- ✅ Wishlist
+- ✅ Email Notifications
+- ✅ Custom Domains
+- ✅ Homepage Builder
+
+### Demo Data Seeded
+- Admin user with full access
+- Store: "Nova Fashion Ghana"
+- 4 Product Categories (Women's Fashion, Men's Wear, Accessories, Footwear)
+- 3 Brands (Nova Couture, Kente Royal, AfriCraft)
+- 4 Demo Products with images
+- **4 Sample Coupons**:
+  - `WELCOME10` - 10% off for new customers
+  - `SAVE50` - GHS 50 off orders above GHS 300
+  - `FREESHIP` - Free shipping on orders above GHS 100
+  - `FLASH20` - Expired 20% off (for testing)
+- **6 Product Reviews** (mix of approved and pending)
+- 4 Delivery Zones (Accra, Tema, Kumasi, Nationwide)
+
+## Backend API Endpoints
+
+### Coupons
+- `POST /api/coupons/create` - Create new coupon
+- `GET /api/coupons/list` - List coupons with filters
+- `POST /api/coupons/validate` - Validate coupon for checkout
+
+### Reviews
+- `POST /api/reviews/create` - Submit product review
+- `GET /api/reviews/list` - Get product reviews
+- `POST /api/reviews/moderate` - Approve/reject reviews (merchant)
+- `POST /api/reviews/helpful` - Mark review as helpful
+
+## Tech Stack
+
+**Frontend:**
+- React 18 + TypeScript
+- React Router v6
+- TanStack Query (React Query)
+- CSS Modules with design tokens
+
+**Backend:**
+- Node.js custom server
+- PostgreSQL
+- Kysely ORM (type-safe SQL)
+- JWT-based authentication
+
+**Integrations:**
+- Cloudinary (image hosting)
+- AWS S3 (file storage)
+- Paystack (payments)
+- Hubtel (Ghana Mobile Money)
+- Nodemailer (email)
+
+## Project Structure
+
+```
+/workspace
+├── database/           # SQL migrations and seed files
+├── endpoints/          # API routes (file-based routing)
+│   ├── auth/          # Authentication endpoints
+│   ├── coupons/       # Coupon management
+│   ├── reviews/       # Product reviews
+│   ├── products/      # Product CRUD
+│   ├── orders/        # Order management
+│   └── ...
+├── helpers/           # Shared utilities, DB client, hooks
+├── pages/             # Page components
+├── components/        # Reusable UI components
+├── scripts/           # Setup and maintenance scripts
+└── server.ts          # Main server entry point
+```
+
+## Environment Variables
+
+Create a `.env` file with:
+
+```env
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/nova_commerce
+JWT_SECRET=your-secret-key-here
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+PAYSTACK_SECRET_KEY=your-paystack-key
+HUBTEL_API_KEY=your-hubtel-key
+```
+
+## Next Steps
+
+1. **Customize**: Update demo data with your own products and branding
+2. **Configure Payments**: Add your Paystack/Hubtel credentials
+3. **Set Up Email**: Configure SMTP for transactional emails
+4. **Deploy**: Build and deploy to your preferred hosting platform
+
+---
+
+Built with ❤️ for Ghana's e-commerce ecosystem
