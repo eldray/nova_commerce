@@ -8,6 +8,22 @@ import { encryptSecret } from "../../helpers/encryption";
 export type InputType = typeof schema._input;
 export type OutputType = typeof schema._output;
 
+export async function updatePaymentCredentials(input: InputType): Promise<OutputType> {
+  const res = await fetch("/api/settings/payments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: superjson.stringify(input),
+  });
+
+  const json = superjson.parse(await res.text()) as any;
+
+  if (!res.ok) {
+    throw new Error((json as any).error || "Failed to update payment credentials");
+  }
+
+  return json as OutputType;
+}
+
 export async function handle(request: Request) {
     try {
         const user = await getServerUserSession(request);
