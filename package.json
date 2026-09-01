@@ -21,7 +21,6 @@
     "@types/next": "^8.0.7",
     "@types/nodemailer": "^8.0.1",
     "aws-sdk": "^2.1693.0",
-    "better-sqlite3": "^12.11.1",
     "cloudinary": "^2.10.0",
     "kysely": "^0.27.4",
     "lucide-react": "^0.400.0",
