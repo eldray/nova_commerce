@@ -19,6 +19,7 @@ export const schema = z.object({
     guestEmail: z.string().email().optional(),
     notes: z.string().max(500).optional(),
     couponCode: z.string().max(50).optional(),
+    discountAmount: z.number().nonnegative().optional(),
 });
 
 export type InputType = z.infer<typeof schema>;

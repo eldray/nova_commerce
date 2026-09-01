@@ -25,6 +25,7 @@ import { useCart } from "../helpers/CartContext";
 import { usePublicStore } from "../helpers/usePublicStore";
 import { usePublicDeliveryZones } from "../helpers/usePublicDeliveryZones";
 import { useCheckout } from "../helpers/useCheckout";
+import { useCoupons } from "../helpers/useCoupons";
 import styles from "./checkout.module.css";
 
 const formatMoney = (amount: number, currency: string) =>
@@ -41,14 +42,17 @@ const formSchema = z.object({
 
 export default function CheckoutPage() {
     const navigate = useNavigate();
-    const { items, subtotal, clear } = useCart();
+    const { items, subtotal, clear, appliedCoupon, applyCoupon, removeCoupon, discountAmount, totalAfterDiscount } = useCart();
     const { data: storeData } = usePublicStore();
     const store = storeData?.store;
     const currency = store?.currency ?? "GHS";
     const { data: zonesData } = usePublicDeliveryZones(store?.tenantId);
     const [zoneId, setZoneId] = useState<string>("");
+    const [couponCode, setCouponCode] = useState<string>("");
+    const [couponError, setCouponError] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const checkout = useCheckout();
+    const couponValidation = useCoupons(store?.tenantId);
 
     const form = useForm({
         schema: formSchema,
@@ -74,7 +78,36 @@ export default function CheckoutPage() {
             ? 0
             : Number(selectedZone.fee)
         : 0;
-    const total = subtotal + deliveryFee;
+    
+    // Apply free shipping coupon if applicable
+    const finalDeliveryFee = appliedCoupon?.discountType === 'free_shipping' ? 0 : deliveryFee;
+    const total = totalAfterDiscount + finalDeliveryFee;
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim() || !store) return;
+        
+        setCouponError(null);
+        try {
+            const result = await couponValidation.validateMutation.mutateAsync({
+                code: couponCode.trim(),
+                subtotal: totalAfterDiscount,
+            });
+            
+            if (result.valid) {
+                applyCoupon({
+                    code: result.coupon.code,
+                    discountType: result.coupon.discountType,
+                    discountValue: result.coupon.discountValue,
+                    description: result.coupon.description,
+                });
+                setCouponCode("");
+            } else {
+                setCouponError(result.message || "Invalid coupon code");
+            }
+        } catch (err) {
+            setCouponError(err instanceof Error ? err.message : "Failed to validate coupon");
+        }
+    };
 
     const handleSubmit = async (data: z.infer<typeof formSchema>) => {
         if (!store) return;
@@ -90,6 +123,8 @@ export default function CheckoutPage() {
                 deliveryCity: data.deliveryCity,
                 guestEmail: data.guestEmail || undefined,
                 notes: data.notes || undefined,
+                couponCode: appliedCoupon?.code,
+                discountAmount: appliedCoupon ? discountAmount : undefined,
             });
             clear();
             navigate("/order-confirmation", { state: { orderNumber: result.orderNumber, total: result.total } });
@@ -238,9 +273,55 @@ export default function CheckoutPage() {
                         <span>Subtotal</span>
                         <span>{formatMoney(subtotal, currency)}</span>
                     </div>
+                    
+                    {/* Coupon discount row */}
+                    {appliedCoupon && (
+                        <div className={styles.summaryRowDiscount}>
+                            <span>
+                                Discount ({appliedCoupon.code})
+                                <button onClick={removeCoupon} className={styles.removeCouponBtn} title="Remove coupon">✕</button>
+                            </span>
+                            <span>-{formatMoney(discountAmount, currency)}</span>
+                        </div>
+                    )}
+                    
+                    {/* Coupon input if no coupon applied */}
+                    {!appliedCoupon && (
+                        <>
+                            <div className={styles.couponSection}>
+                                <div className={styles.couponInputWrapper}>
+                                    <input
+                                        type="text"
+                                        placeholder="Promo code"
+                                        value={couponCode}
+                                        onChange={(e) => setCouponCode(e.target.value)}
+                                        className={styles.couponInput}
+                                        disabled={couponValidation.validateMutation.isPending}
+                                    />
+                                    <Button 
+                                        type="button" 
+                                        size="sm" 
+                                        onClick={handleApplyCoupon}
+                                        disabled={!couponCode.trim() || couponValidation.validateMutation.isPending}
+                                        className={styles.couponApplyBtn}
+                                    >
+                                        {couponValidation.validateMutation.isPending ? <Spinner size="sm" /> : "Apply"}
+                                    </Button>
+                                </div>
+                                {couponError && <div className={styles.couponError}>{couponError}</div>}
+                            </div>
+                        </>
+                    )}
+                    
                     <div className={styles.summaryRow}>
                         <span>Delivery</span>
-                        <span>{selectedZone ? formatMoney(deliveryFee, currency) : "—"}</span>
+                        <span>
+                            {selectedZone 
+                                ? appliedCoupon?.discountType === 'free_shipping'
+                                    ? formatMoney(0, currency) + " (Free with coupon)"
+                                    : formatMoney(deliveryFee, currency)
+                                : "—"}
+                        </span>
                     </div>
                     <div className={styles.summaryDivider} />
                     <div className={styles.summaryTotalRow}>

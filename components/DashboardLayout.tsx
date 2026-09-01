@@ -11,6 +11,7 @@ import {
   BarChart3,
   Settings,
   Store,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "../helpers/useAuth";
 import { useMyStores } from "../helpers/useMyStores";
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { label: "Customers", to: "/dashboard/customers", icon: Users },
   { label: "Staff", to: "/dashboard/staff", icon: UserPlus },
   { label: "Coupons", to: "/dashboard/coupons", icon: Tag },
+  { label: "Reviews", to: "/dashboard/reviews", icon: MessageSquare },
   { label: "Delivery", to: "/dashboard/delivery", icon: Truck },
   { label: "Analytics", to: "/dashboard/analytics", icon: BarChart3 },
   { 
