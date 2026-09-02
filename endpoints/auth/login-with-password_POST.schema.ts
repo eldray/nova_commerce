@@ -20,6 +20,7 @@ export const postLoginWithPassword = async (
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
+    credentials: 'include', // Important: include cookies
     ...init,
   });
   

@@ -1,89 +1,82 @@
-import { validateRequest } from '../../helpers/getServerUserSession';
-import { db } from '../../helpers/db';
+// endpoints/uploads/upload_POST.ts
+import { getSessionUser } from '../../helpers/getServerUserSession';
 import { uploadFile, validateFileType } from '../../helpers/cloudinary';
-import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+export async function handle(req: any, res: any) {
   let user;
-  
+
   try {
-    const session = await validateRequest();
-    user = session?.user;
+    user = await getSessionUser(req);
   } catch (error) {
-    // Allow uploads without auth for public endpoints if needed
     user = null;
   }
 
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const folder = formData.get('folder') as string;
+    const file = req.file;
+    const { folder = 'uploads' } = req.body;
 
     // Validate inputs
     if (!file) {
-      return NextResponse.json(
-        { success: false, error: 'No file provided' },
-        { status: 400 }
-      );
+      return res.status(400).json({
+        success: false,
+        error: 'No file provided'
+      });
     }
 
-    if (!folder || !['products', 'logos', 'banners', 'reviews'].includes(folder)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid folder specified' },
-        { status: 400 }
-      );
+    const allowedFolders = ['products', 'logos', 'banners', 'reviews'];
+    if (!allowedFolders.includes(folder)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid folder specified'
+      });
     }
 
     // Validate file type
     const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      return NextResponse.json(
-        { success: false, error: 'File must be JPEG, PNG, or WebP' },
-        { status: 400 }
-      );
+    if (!validTypes.includes(file.mimetype)) {
+      return res.status(400).json({
+        success: false,
+        error: 'File must be JPEG, PNG, or WebP'
+      });
     }
 
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json(
-        { success: false, error: 'File size must be less than 5MB' },
-        { status: 400 }
-      );
+      return res.status(400).json({
+        success: false,
+        error: 'File size must be less than 5MB'
+      });
     }
 
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
     // Validate file type using magic numbers
-    const isValidType = validateFileType(buffer, ['jpg', 'jpeg', 'png', 'webp']);
+    const isValidType = validateFileType(file.buffer, ['jpg', 'jpeg', 'png', 'webp']);
     if (!isValidType) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid file format' },
-        { status: 400 }
-      );
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid file format'
+      });
     }
 
     // Create tenant-specific folder path
-    const tenantFolder = user 
-      ? `${folder}/tenant_${user.tenant_id}` 
+    const tenantFolder = user
+      ? `${folder}/tenant_${user.tenantId || 'default'}`
       : folder;
 
     // Upload to Cloudinary
-    const result = await uploadFile(buffer, {
+    const result = await uploadFile(file.buffer, {
       folder: tenantFolder,
       allowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
       maxFileSize: 5 * 1024 * 1024,
     });
 
     if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: 500 }
-      );
+      return res.status(500).json({
+        success: false,
+        error: result.error
+      });
     }
 
-    return NextResponse.json({
+    return res.status(200).json({
       success: true,
       url: result.url,
       publicId: result.publicId,
@@ -91,9 +84,9 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error('Upload error:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Upload failed' },
-      { status: 500 }
-    );
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Upload failed'
+    });
   }
 }

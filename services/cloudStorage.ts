@@ -87,7 +87,7 @@ export async function deleteFromS3(key: string): Promise<void> {
  * Generate presigned URL for private uploads
  */
 export function getPresignedUploadUrl(key: string, contentType: string): string {
-  const params: AWS.S3.GetSignedUrlRequest = {
+  const params = {
     Bucket: BUCKET_NAME,
     Key: key,
     Expires: 60 * 5, // 5 minutes

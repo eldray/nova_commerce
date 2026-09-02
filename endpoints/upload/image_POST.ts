@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { createEndpoint } from "@kitql/helper";
 import superjson from "superjson";
 import { getServerUserSession } from "../../helpers/getServerUserSession";
 import { roleHasPermission } from "../../helpers/permissions";
 import { v2 as cloudinary } from "cloudinary";
 import { Readable } from "stream";
+import { TenantRole } from "../../helpers/schema";
 
 // Configure Cloudinary
 cloudinary.config({
@@ -13,58 +13,60 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const POST = createEndpoint({
-  input: z.object({
-    image: z.string(), // Base64 encoded image
-    folder: z.string().optional().default("products"),
-  }),
-  handler: async ({ image, folder }, event) => {
-    const { user, session, tenantId, tenantRole } = await getServerUserSession(event);
+const schema = z.object({
+  image: z.string(),
+  folder: z.string().optional().default("products"),
+});
+
+export async function handle(request: Request) {
+  try {
+    const { user, session, tenantId, tenantRole } = await getServerUserSession(request);
 
     if (!user || !session) {
-      throw new Error("Unauthorized", { cause: { status: 401 } });
+      return new Response(superjson.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
     if (!tenantId) {
-      throw new Error("No tenant selected", { cause: { status: 400 } });
+      return new Response(superjson.stringify({ error: "No tenant selected" }), { status: 400 });
     }
 
     if (!tenantRole) {
-      throw new Error("User not associated with tenant", { cause: { status: 403 } });
+      return new Response(superjson.stringify({ error: "User not associated with tenant" }), { status: 403 });
     }
 
-    if (!roleHasPermission(tenantRole, "products.manage")) {
-      throw new Error("Insufficient permissions to upload images", { cause: { status: 403 } });
+    if (!roleHasPermission(tenantRole as TenantRole, "products.manage")) {
+      return new Response(superjson.stringify({ error: "Insufficient permissions to upload images" }), { status: 403 });
     }
 
-    try {
-      // Upload to Cloudinary
-      const result = await new Promise<any>((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            folder: `novacommerce/${tenantId}/${folder}`,
-            resource_type: "image",
-            transformation: [
-              { quality: "auto:good" },
-              { fetch_format: "auto" },
-            ],
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
+    const json = superjson.parse(await request.text());
+    const { image, folder } = schema.parse(json);
 
-        // Convert base64 to stream
-        const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
-        const buffer = Buffer.from(base64Data, "base64");
-        const readable = new Readable();
-        readable.push(buffer);
-        readable.push(null);
-        readable.pipe(uploadStream);
-      });
+    const result = await new Promise<any>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: `novacommerce/${tenantId}/${folder}`,
+          resource_type: "image",
+          transformation: [
+            { quality: "auto:good" },
+            { fetch_format: "auto" },
+          ],
+        },
+        (error, res) => {
+          if (error) reject(error);
+          else resolve(res);
+        }
+      );
 
-      return superjson.stringify({
+      const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, "base64");
+      const readable = new Readable();
+      readable.push(buffer);
+      readable.push(null);
+      readable.pipe(uploadStream);
+    });
+
+    return new Response(
+      superjson.stringify({
         success: true,
         image: {
           url: result.secure_url,
@@ -74,12 +76,13 @@ export const POST = createEndpoint({
           format: result.format,
           bytes: result.bytes,
         },
-      });
-    } catch (error: any) {
-      console.error("Image upload error:", error);
-      throw new Error(`Failed to upload image: ${error.message}`, { 
-        cause: { status: 500 } 
-      });
-    }
-  },
-});
+      })
+    );
+  } catch (error: any) {
+    console.error("Image upload error:", error);
+    return new Response(
+      superjson.stringify({ error: `Failed to upload image: ${error.message}` }),
+      { status: 500 }
+    );
+  }
+}

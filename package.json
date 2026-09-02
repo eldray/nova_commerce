@@ -12,7 +12,8 @@
     "db:seed": "tsx scripts/seed-demo-data.ts",
     "db:reset": "tsx scripts/reset-database.ts",
     "db:create-admin": "tsx scripts/create-super-admin.ts",
-    "server": "tsx server.ts"
+    "server": "tsx server.ts",
+    "start": "concurrently \"npm run dev\" \"npm run server\""
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -36,6 +37,7 @@
     "react-router-dom": "^6.26.0",
     "recharts": "^3.10.1",
     "superjson": "^2.0.0",
+    "tsx": "^4.23.13",
     "wouter": "^3.10.0",
     "zod": "^3.25.76"
   },
@@ -51,9 +53,9 @@
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^4.3.1",
     "bcryptjs": "^3.0.3",
+    "concurrently": "^10.0.5",
     "drizzle-orm": "^0.45.2",
     "handlebars": "^4.7.9",
-    "tsx": "^4.23.13",
     "typescript": "^5.5.3",
     "uuid": "^14.0.1",
     "vite": "^5.3.4"

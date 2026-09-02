@@ -1,73 +1,66 @@
-import { z } from "zod";
-import { createEndpoint } from "@kitql/helper";
+import { schema, OutputType } from "./publish_POST.schema";
 import superjson from "superjson";
 import { getServerUserSession } from "../../helpers/getServerUserSession";
 import { db } from "../../helpers/db";
-import { eq, and } from "drizzle-orm";
-import { tenants, stores, tenantUsers } from "../../helpers/schema";
 import { roleHasPermission } from "../../helpers/permissions";
 
-export const POST = createEndpoint({
-  input: z.object({
-    publish: z.boolean().default(true),
-  }),
-  handler: async ({ publish }, event) => {
-    const { user, session, tenantId, tenantRole } = await getServerUserSession(event);
+export async function handle(request: Request) {
+  try {
+    const { user, session, tenantId, tenantRole } = await getServerUserSession(request);
 
     if (!user || !session) {
-      throw new Error("Unauthorized", { cause: { status: 401 } });
+      return new Response(superjson.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
     if (!tenantId) {
-      throw new Error("No tenant selected", { cause: { status: 400 } });
+      return new Response(superjson.stringify({ error: "No tenant selected" }), { status: 400 });
     }
 
     if (!tenantRole) {
-      throw new Error("User not associated with tenant", { cause: { status: 403 } });
+      return new Response(superjson.stringify({ error: "User not associated with tenant" }), { status: 403 });
     }
 
     if (!roleHasPermission(tenantRole, "store.publish")) {
-      throw new Error("Insufficient permissions to publish store", { cause: { status: 403 } });
+      return new Response(superjson.stringify({ error: "Insufficient permissions to publish store" }), { status: 403 });
     }
 
-    const tenantUser = await db.query.tenantUsers.findFirst({
-      where: and(
-        eq(tenantUsers.tenantId, tenantId),
-        eq(tenantUsers.userId, user.id)
-      ),
-    });
+    const json = superjson.parse(await request.text());
+    const input = schema.parse(json);
 
-    if (!tenantUser) {
-      throw new Error("User not found in tenant", { cause: { status: 403 } });
+    const store = await db
+      .selectFrom("stores")
+      .selectAll()
+      .where("tenantId", "=", tenantId)
+      .executeTakeFirst();
+
+    if (!store) {
+      return new Response(superjson.stringify({ error: "Store not found for tenant" }), { status: 404 });
     }
 
-    const updatedStore = await db.transaction(async (tx) => {
-      const [store] = await tx.select().from(stores).where(eq(stores.tenantId, tenantId)).limit(1);
+    const updatedStore = await db
+      .updateTable("stores")
+      .set({
+        isPublished: input.publish,
+        updatedAt: new Date(),
+      })
+      .where("tenantId", "=", tenantId)
+      .returningAll()
+      .executeTakeFirstOrThrow();
 
-      if (!store) {
-        throw new Error("Store not found for tenant", { cause: { status: 404 } });
-      }
-
-      const [updated] = await tx
-        .update(stores)
-        .set({
-          isPublished: publish,
-          updatedAt: new Date(),
-        })
-        .where(eq(stores.tenantId, tenantId))
-        .returning();
-
-      return updated;
-    });
-
-    return superjson.stringify({
-      success: true,
-      store: {
-        id: updatedStore.id,
-        isPublished: updatedStore.isPublished,
-        storeName: updatedStore.storeName,
-        subdomain: updatedStore.subdomain,
-      },
-    });
-  },
-});
+    return new Response(
+      superjson.stringify({
+        success: true,
+        store: {
+          id: updatedStore.id,
+          isPublished: updatedStore.isPublished,
+          storeName: updatedStore.storeName,
+          subdomain: updatedStore.subdomain,
+        },
+      } satisfies OutputType)
+    );
+  } catch (error) {
+    console.error("publish_POST error:", error);
+    const message = error instanceof Error ? error.message : "Failed to publish store";
+    return new Response(superjson.stringify({ error: message }), { status: 400 });
+  }
+}

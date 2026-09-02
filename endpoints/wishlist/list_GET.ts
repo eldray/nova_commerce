@@ -1,94 +1,88 @@
 import superjson from "superjson";
-import { schema, OutputType, WishlistItem } from "./list_GET.schema";
-import { db } from "../../helpers/db";
+import { OutputType, WishlistItem } from "./list_GET.schema";
+import { db, sql } from "../../helpers/db";
 import { getServerUserSession } from "../../helpers/getServerUserSession";
-import { getTenantIdFromSession } from "../../helpers/tenantContext";
 
 export async function handle(request: Request) {
   try {
-    const session = await getServerUserSession(request);
-    if (!session) {
+    const userSession = await getServerUserSession(request);
+    if (!userSession || !userSession.user) {
       return new Response(superjson.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
-    const tenantResult = await getTenantIdFromSession(request);
-    if (!tenantResult.success || !tenantResult.tenantId) {
+    const { user, tenantId } = userSession;
+
+    if (!tenantId) {
       return new Response(superjson.stringify({ error: "Tenant not found" }), { status: 404 });
     }
-    const tenantId = tenantResult.tenantId;
-    const userId = session.user.id;
 
-    // Find customer by user email
     const customer = await db
       .selectFrom("customers")
       .select(["id"])
-      .where("email", "=", session.user.email)
-      .where("tenant_id", "=", tenantId)
+      .where("email", "=", user.email)
+      .where("tenantId", "=", tenantId)
       .executeTakeFirst();
 
     if (!customer) {
-      return new Response(superjson.stringify({ items: [], total: 0, page: 1, limit: 20, hasMore: false } satisfies OutputType), {
-        status: 200,
-      });
+      return new Response(
+        superjson.stringify({ items: [], total: 0, page: 1, limit: 20, hasMore: false } satisfies OutputType),
+        { status: 200 }
+      );
     }
 
     const url = new URL(request.url);
-    const page = parseInt(url.searchParams.get("page") || "1");
-    const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 50);
+    const page = parseInt(url.searchParams.get("page") || "1", 10);
+    const limit = Math.min(parseInt(url.searchParams.get("limit") || "20", 10), 50);
     const offset = (page - 1) * limit;
 
-    // Get total count
     const countResult = await db
       .selectFrom("wishlists")
-      .select((eb) => eb.fn.count("id").as("count"))
-      .where("tenant_id", "=", tenantId)
-      .where("customer_id", "=", customer.id)
+      .select(sql<number>`COUNT(*)`.as("count"))
+      .where("tenantId", "=", tenantId)
+      .where("customerId", "=", customer.id)
       .executeTakeFirstOrThrow();
 
     const total = Number(countResult.count);
 
-    // Get wishlist items with product details
     const items = await db
       .selectFrom("wishlists as w")
-      .innerJoin("products as p", "p.id", "w.product_id")
-      .leftJoin("product_images as pi", (join) =>
-        join.onRef("pi.product_id", "=", "p.id").on("pi.is_primary", "=", true)
-      )
+      .innerJoin("products as p", "p.id", "w.productId")
+      .leftJoin("productImages as pi", "pi.productId", "p.id")
       .select([
         "w.id",
-        "w.product_id",
+        "w.productId",
         "p.name as productName",
         "p.slug as productSlug",
         "p.price",
-        "p.currency",
-        "p.stock_quantity",
-        "p.compare_at_price",
-        "pi.image_url as productImageUrl",
-        "w.created_at as addedAt",
+        "p.salePrice",
+        "p.stockQuantity",
+        "p.status as productStatus",
+        "pi.url as primaryImage",
+        "w.createdAt",
       ])
-      .where("w.tenant_id", "=", tenantId)
-      .where("w.customer_id", "=", customer.id)
-      .orderBy("w.created_at desc")
+      .where("w.tenantId", "=", tenantId)
+      .where("w.customerId", "=", customer.id)
+      .orderBy("w.createdAt", "desc")
       .limit(limit)
       .offset(offset)
       .execute();
 
-    const wishlistItems: WishlistItem[] = items.map((item) => ({
+    const formattedItems: WishlistItem[] = items.map((item) => ({
       id: item.id,
-      productId: item.product_id,
+      productId: item.productId,
       productName: item.productName,
       productSlug: item.productSlug,
-      productImageUrl: item.productImageUrl,
-      price: Number(item.price),
-      currency: item.currency || "GHS",
-      inStock: (item.stock_quantity || 0) > 0,
-      addedAt: item.addedAt.toISOString(),
-      compareAtPrice: item.compare_at_price ? Number(item.compare_at_price) : null,
+      price: String(item.price),
+      salePrice: item.salePrice ? String(item.salePrice) : null,
+      primaryImage: item.primaryImage || null,
+      inStock: item.stockQuantity > 0,
+      productStatus: item.productStatus,
+      createdAt: new Date(item.createdAt),
     }));
 
     return new Response(
       superjson.stringify({
-        items: wishlistItems,
+        items: formattedItems,
         total,
         page,
         limit,
@@ -97,8 +91,8 @@ export async function handle(request: Request) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("wishlist list error:", error);
-    const message = error instanceof Error ? error.message : "Failed to load wishlist";
-    return new Response(superjson.stringify({ error: message }), { status: 400 });
+    console.error("wishlist/list error:", error);
+    const message = error instanceof Error ? error.message : "Failed to fetch wishlist";
+    return new Response(superjson.stringify({ error: message }), { status: 500 });
   }
 }

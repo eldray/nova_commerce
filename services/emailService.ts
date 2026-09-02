@@ -161,15 +161,15 @@ class EmailQueue {
     messageId?: string
   ) {
     try {
-      await db.email_logs.insert({
+      await db.insertInto("emailLogs").values({
         recipient: item.to,
         subject: item.subject,
-        template_name: item.template,
+        templateName: item.template,
         status: status,
-        error_log: error,
-        message_id: messageId,
-        sent_at: status === 'sent' ? new Date() : null,
-      });
+        errorLog: error,
+        messageId: messageId || null,
+        sentAt: status === 'sent' ? new Date() : null,
+      }).execute();
     } catch (dbError) {
       console.error('Failed to log email status:', dbError);
     }
@@ -214,7 +214,7 @@ export class EmailService {
         console.log('📧 Email (dev mode):', {
           to: mail.to,
           subject: mail.subject,
-          html: mail.html?.substring(0, 200) + '...',
+          html: typeof mail.html === 'string' ? mail.html.substring(0, 200) + '...' : '',
         });
         return { messageId: 'dev-' + Date.now() };
       }
@@ -228,8 +228,7 @@ export class EmailService {
         console.log(`✅ Email sent via ${provider.name}`);
         return { messageId: result.messageId || 'unknown' };
       } catch (error) {
-        console.warn(`❌ Email provider ${provider.name} failed:`, error);
-        // Continue to next provider
+        console.error(`Failed to send via ${provider.name}:`, error);
       }
     }
 
@@ -237,55 +236,27 @@ export class EmailService {
   }
 
   /**
-   * Queue email for background sending
+   * Queue email for background processing
    */
-  async queueEmail(
+  async queue(
     to: string,
     subject: string,
     template: string,
-    data: any
-  ): Promise<string> {
-    return await this.queue.add({
+    data: any,
+    options: { priority?: number; retries?: number } = {}
+  ): Promise<void> {
+    await this.queue.add({
       to,
       subject,
       template,
       data,
+      priority: options.priority || 0,
+      retries: options.retries || 3,
     });
   }
 
-  /**
-   * Render email template with Handlebars
-   */
-  async renderTemplate(templateName: string, data: any): Promise<string> {
-    // Check cache first
-    if (templateCache.has(templateName)) {
-      const cached = templateCache.get(templateName)!;
-      const template = handlebars.compile(cached);
-      return template(data);
-    }
-
-    // Load template from file
-    const templatePath = path.join(
-      process.cwd(),
-      'templates',
-      'emails',
-      `${templateName}.html`
-    );
-
-    if (!fs.existsSync(templatePath)) {
-      throw new Error(`Email template not found: ${templateName}`);
-    }
-
-    const templateContent = fs.readFileSync(templatePath, 'utf-8');
-    templateCache.set(templateName, templateContent);
-
-    const template = handlebars.compile(templateContent);
-    return template({
-      ...data,
-      companyName: process.env.COMPANY_NAME || 'Nova Commerce',
-      supportEmail: process.env.SUPPORT_EMAIL || 'support@novacommerce.com',
-      currentYear: new Date().getFullYear(),
-    });
+  async queueEmail(to: string, subject: string, template: string, data: any): Promise<void> {
+    return this.queue(to, subject, template, data);
   }
 
   /**
@@ -463,16 +434,13 @@ export class EmailService {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const stats = await db.query(`
-      SELECT 
-        status,
-        COUNT(*) as count,
-        COUNT(CASE WHEN opened_at IS NOT NULL THEN 1 END) as opened_count
-      FROM email_logs
-      WHERE tenant_id = $1
-        AND sent_at >= $2
-      GROUP BY status
-    `, [tenantId, startDate]);
+    const stats = await db
+      .selectFrom("emailLogs")
+      .select(["status", db.fn.countAll().as("count")])
+      .where("tenantId", "=", tenantId)
+      .where("sentAt", ">=", startDate)
+      .groupBy("status")
+      .execute();
 
     return stats;
   }

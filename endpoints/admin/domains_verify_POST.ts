@@ -1,65 +1,53 @@
-import { Request, Response } from 'express';
-import { authenticateAdmin } from '../../middleware/auth';
-import { DomainService } from '../../services/domainService';
-import { db } from '../../config/database';
+import { requireAdmin } from "../../middleware/auth";
+import { DomainService } from "../../services/domainService";
+import { db } from "../../helpers/db";
+import superjson from "superjson";
 
-interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    email: string;
-    role: string;
-  };
-}
-
-export const post = async (req: AuthRequest, res: Response) => {
+export async function handle(request: Request) {
   try {
-    authenticateAdmin(req);
+    await requireAdmin(request);
 
-    const { domainId } = req.body;
+    const body = superjson.parse<{ domainId?: number }>(await request.text());
+    const { domainId } = body;
 
     if (!domainId) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Domain ID is required' 
-      });
+      return new Response(superjson.stringify({ error: "Domain ID is required" }), { status: 400 });
     }
 
-    // Force verify the domain (admin override)
     await DomainService.forceVerifyDomain(domainId);
 
-    // Get updated domain info
-    const domain = await db.query(
-      `SELECT 
-        cd.*,
-        u.email as user_email,
-        s.subdomain
-       FROM custom_domains cd
-       JOIN users u ON cd.user_id = u.id
-       LEFT JOIN stores s ON s.user_id = cd.user_id
-       WHERE cd.id = ?`,
-      [domainId]
-    );
+    const domain = await db
+      .selectFrom("customDomains")
+      .selectAll()
+      .where("id", "=", domainId)
+      .executeTakeFirst();
 
-    // Update store with custom domain
-    if (domain[0]) {
-      await db.query(
-        `UPDATE stores 
-         SET custom_domain = ?, ssl_enabled = TRUE 
-         WHERE user_id = ?`,
-        [domain[0].domain, domain[0].user_id]
-      );
+    if (domain) {
+      await db
+        .updateTable("stores")
+        .set({
+          customDomain: domain.domain,
+          sslEnabled: true,
+        })
+        .where("tenantId", "=", domain.userId)
+        .execute();
     }
 
-    res.json({ 
-      success: true, 
-      message: 'Domain manually verified by admin',
-      data: domain[0]
-    });
+    return new Response(
+      superjson.stringify({
+        success: true,
+        message: "Domain manually verified by admin",
+        data: domain,
+      })
+    );
   } catch (error: any) {
-    console.error('Error admin verifying domain:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message || 'Failed to verify domain' 
-    });
+    console.error("Error admin verifying domain:", error);
+    return new Response(
+      superjson.stringify({
+        success: false,
+        error: error.message || "Failed to verify domain",
+      }),
+      { status: error.cause?.status || 500 }
+    );
   }
-};
+}

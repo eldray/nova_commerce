@@ -146,6 +146,7 @@ export interface Stores {
   onboardingStep: Generated<string>;
   primaryColor: string | null;
   socialLinks: Generated<Json>;
+  sslEnabled: Generated<boolean>;
   storeName: string;
   subdomain: string;
   tenantId: number;
@@ -456,21 +457,141 @@ export interface ReviewHelpfulness {
   createdAt: Generated<Timestamp>;
 }
 
+export interface CustomDomains {
+  id: Generated<number>;
+  userId: number;
+  domain: string;
+  status: Generated<string>;
+  verificationToken: string;
+  dnsRecordsChecked: Generated<boolean>;
+  cnameConfigured: Generated<boolean>;
+  txtConfigured: Generated<boolean>;
+  sslEnabled: Generated<boolean>;
+  sslStatus: Generated<string>;
+  verifiedAt: Timestamp | null;
+  failedAt: Timestamp | null;
+  failureReason: string | null;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+}
+
+export interface EmailLogs {
+  id: Generated<number>;
+  tenantId: number | null;
+  recipient: string;
+  subject: string;
+  templateName: string;
+  status: Generated<string>;
+  messageId: string | null;
+  errorLog: string | null;
+  sentAt: Timestamp | null;
+  openedAt: Timestamp | null;
+  bouncedAt: Timestamp | null;
+  createdAt: Generated<Timestamp>;
+  metadata: Generated<Json>;
+}
+
+export interface EmailTemplates {
+  id: Generated<number>;
+  tenantId: number | null;
+  name: string;
+  subject: string;
+  htmlContent: string;
+  textContent: string | null;
+  variables: Generated<Json>;
+  isActive: Generated<boolean>;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+}
+
+export interface NotificationPreferences {
+  id: Generated<number>;
+  userId: number;
+  tenantId: number;
+  emailOrderConfirmation: Generated<boolean>;
+  emailOrderStatusUpdate: Generated<boolean>;
+  emailPaymentReceipt: Generated<boolean>;
+  emailPasswordReset: Generated<boolean>;
+  emailLowStockAlert: Generated<boolean>;
+  emailSubscriptionRenewal: Generated<boolean>;
+  emailMarketing: Generated<boolean>;
+  smsOrderConfirmation: Generated<boolean>;
+  smsOrderStatusUpdate: Generated<boolean>;
+  whatsappOrderUpdate: Generated<boolean>;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+}
+
+export interface PageSections {
+  id: Generated<number>;
+  storeId: number;
+  sectionType: string;
+  title: string | null;
+  subtitle: string | null;
+  settings: Generated<Json>;
+  backgroundImageUrl: string | null;
+  backgroundColor: string | null;
+  textColor: string | null;
+  sortOrder: Generated<number>;
+  isEnabled: Generated<boolean>;
+  isPublished: Generated<boolean>;
+  createdAt: Generated<Timestamp>;
+  updatedAt: Generated<Timestamp>;
+}
+
+export interface SectionItems {
+  id: Generated<number>;
+  sectionId: number;
+  itemType: string;
+  itemId: number | null;
+  customTitle: string | null;
+  customUrl: string | null;
+  customImageUrl: string | null;
+  sortOrder: Generated<number>;
+  createdAt: Generated<Timestamp>;
+}
+
+export interface HomepageTemplates {
+  id: Generated<number>;
+  name: string;
+  slug: string;
+  description: string | null;
+  thumbnailUrl: string | null;
+  category: Generated<string>;
+  isPremium: Generated<boolean>;
+  sectionConfig: Json | null;
+  createdAt: Generated<Timestamp>;
+}
+
+export interface Wishlists {
+  id: Generated<string>;
+  tenantId: number;
+  customerId: number;
+  productId: number;
+  createdAt: Generated<Timestamp>;
+}
+
 export interface DB {
   auditLogs: AuditLogs;
   brands: Brands;
   categories: Categories;
   couponUsages: CouponUsages;
   coupons: Coupons;
+  customDomains: CustomDomains;
   customerAddresses: CustomerAddresses;
   customers: Customers;
   deliveryZones: DeliveryZones;
+  emailLogs: EmailLogs;
+  emailTemplates: EmailTemplates;
+  homepageTemplates: HomepageTemplates;
   inventoryMovements: InventoryMovements;
   loginAttempts: LoginAttempts;
   merchantSubscriptions: MerchantSubscriptions;
+  notificationPreferences: NotificationPreferences;
   orderItems: OrderItems;
   orders: Orders;
   orderStatusHistory: OrderStatusHistory;
+  pageSections: PageSections;
   paymentCredentials: PaymentCredentials;
   paymentTransactions: PaymentTransactions;
   planFeatures: PlanFeatures;
@@ -479,6 +600,7 @@ export interface DB {
   products: Products;
   productVariants: ProductVariants;
   reviewHelpfulness: ReviewHelpfulness;
+  sectionItems: SectionItems;
   sessions: Sessions;
   stores: Stores;
   subscriptionInvoices: SubscriptionInvoices;
@@ -488,6 +610,7 @@ export interface DB {
   tenantUsers: TenantUsers;
   userPasswords: UserPasswords;
   users: Users;
+  wishlists: Wishlists;
 }
 
 export const UserRoleArrayValues: [UserRole, ...UserRole[]] = ["admin", "super_admin", "user"];

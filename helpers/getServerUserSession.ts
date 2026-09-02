@@ -1,69 +1,72 @@
 import { db } from "./db";
-import { User } from "./User";
-import { getSessionTokenFromRequest } from "./getSetServerSession";
 
-export interface SessionUser extends User {
+export interface SessionUser {
+  id: number;
+  email: string;
+  displayName: string;
+  avatarUrl: string | null;
+  role: string;
   session?: {
     id: string;
     expiresAt: Date;
   };
-  tenantId?: number;
-  tenantRole?: string;
 }
 
 export async function getServerUserSession(request: Request): Promise<SessionUser | null> {
-  const token = getSessionTokenFromRequest(request);
-  if (!token) return null;
+  try {
+    console.log('getServerUserSession called');
+    
+    // Get session token from cookie using the helper
+    const { getSessionTokenFromRequest } = await import('./getSetServerSession');
+    const sessionId = getSessionTokenFromRequest(request);
+    console.log('Session ID from cookie:', sessionId);
+    
+    if (!sessionId) {
+      console.log('No session ID found');
+      return null;
+    }
 
-  const session = await db
-    .selectFrom("sessions")
-    .innerJoin("users", "users.id", "sessions.userId")
-    .leftJoin("tenantUsers", "tenantUsers.userId", "users.id")
-    .select([
-      "users.id",
-      "users.email",
-      "users.displayName",
-      "users.avatarUrl",
-      "users.role",
-      "sessions.id as sessionId",
-      "sessions.expiresAt",
-      "tenantUsers.tenantId",
-      "tenantUsers.role as tenantRole",
-    ])
-    .where("sessions.id", "=", token)
-    .where("sessions.expiresAt", ">", new Date())
-    .executeTakeFirst();
+    // Query session with user data - using snake_case column names
+    const session = await db
+      .selectFrom("sessions")
+      .innerJoin("users", "users.id", "sessions.user_id")
+      .select([
+        "users.id",
+        "users.email",
+        "users.display_name",
+        "users.avatar_url",
+        "users.role",
+        "sessions.id as session_id",
+        "sessions.expires_at",
+      ])
+      .where("sessions.id", "=", sessionId)
+      .where("sessions.expires_at", ">", new Date())
+      .executeTakeFirst();
 
-  if (!session) return null;
+    console.log('Session query result:', session ? 'Found' : 'Not found');
 
-  return {
-    id: session.id,
-    email: session.email,
-    displayName: session.displayName,
-    avatarUrl: session.avatarUrl,
-    role: session.role as User["role"],
-    session: {
-      id: session.sessionId,
-      expiresAt: session.expiresAt,
-    },
-    tenantId: session.tenantId ?? undefined,
-    tenantRole: session.tenantRole ?? undefined,
-  };
+    if (!session) {
+      console.log('No valid session found');
+      return null;
+    }
+
+    return {
+      id: session.id,
+      email: session.email,
+      displayName: session.display_name,
+      avatarUrl: session.avatar_url,
+      role: session.role,
+      session: {
+        id: session.session_id,
+        expiresAt: session.expires_at,
+      },
+    };
+  } catch (error) {
+    console.error("getServerUserSession error:", error);
+    return null;
+  }
 }
 
 export async function getSessionUser(request: Request): Promise<SessionUser | null> {
   return getServerUserSession(request);
-}
-
-export async function validateRequest(request: Request): Promise<{ user: SessionUser | null }> {
-  const user = await getServerUserSession(request);
-  return { user };
-}
-
-export async function requireServerUserSession(request: Request): Promise<SessionUser> {
-  const user = await getServerUserSession(request);
-  if (!user) {
-    throw new Error("Unauthorized");
-  }
-  return user;
 }

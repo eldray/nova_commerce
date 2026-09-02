@@ -1,74 +1,81 @@
-import { getDb } from "../../../helpers/db";
-import type { Context } from "../../../helpers/context";
-import type { InputType, OutputType } from "./list_GET.schema";
+import { db, sql } from "../../helpers/db";
+import { getServerUserSession } from "../../helpers/getServerUserSession";
+import superjson from "superjson";
 
-export async function handler(
-  input: InputType,
-  context: Context
-): Promise<OutputType> {
-  const db = await getDb();
-  const { tenantId } = context;
+export async function handle(request: Request) {
+  try {
+    const { user, tenantId } = await getServerUserSession(request);
+    if (!user || !tenantId) {
+      return new Response(superjson.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
 
-  if (!tenantId) {
-    throw new Error("Tenant ID is required");
-  }
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get("page") || "1", 10);
+    const limit = parseInt(url.searchParams.get("limit") || "20", 10);
+    const status = url.searchParams.get("status");
+    const search = url.searchParams.get("search");
 
-  const offset = (input.page - 1) * input.limit;
+    const offset = (page - 1) * limit;
 
-  // Build query with filters
-  let query = db
-    .selectFrom("coupons")
-    .where("tenantId", "=", tenantId)
-    .selectAll();
+    let query = db
+      .selectFrom("coupons")
+      .where("tenantId", "=", tenantId)
+      .selectAll();
 
-  // Apply status filter
-  if (input.status) {
-    query = query.where("status", "=", input.status);
-  }
+    if (status) {
+      query = query.where("status", "=", status as any);
+    }
 
-  // Apply search filter
-  if (input.search) {
-    query = query.where((eb) =>
-      eb.or([
-        eb("code", "ilike", `%${input.search}%`),
-        eb("name", "ilike", `%${input.search}%`),
-      ])
+    if (search) {
+      query = query.where((eb) =>
+        eb.or([
+          eb("code", "ilike", `%${search}%`),
+          eb("name", "ilike", `%${search}%`),
+        ])
+      );
+    }
+
+    const countResult = await db
+      .selectFrom("coupons")
+      .select(sql<number>`COUNT(*)`.as("count"))
+      .where("tenantId", "=", tenantId)
+      .executeTakeFirstOrThrow();
+
+    const total = Number(countResult.count);
+
+    const coupons = await query
+      .orderBy("createdAt", "desc")
+      .limit(limit)
+      .offset(offset)
+      .execute();
+
+    return new Response(
+      superjson.stringify({
+        coupons: coupons.map((c) => ({
+          id: c.id,
+          code: c.code,
+          name: c.name,
+          description: c.description,
+          type: c.type,
+          value: c.value,
+          minPurchaseAmount: c.minPurchaseAmount,
+          maxDiscountAmount: c.maxDiscountAmount,
+          usageLimit: c.usageLimit,
+          usageLimitPerUser: c.usageLimitPerUser,
+          usedCount: c.usedCount,
+          status: c.status,
+          startsAt: c.startsAt,
+          expiresAt: c.expiresAt,
+          firstOrderOnly: c.firstOrderOnly,
+          createdAt: c.createdAt,
+        })),
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      })
     );
+  } catch (error: any) {
+    console.error("Error listing coupons:", error);
+    return new Response(superjson.stringify({ error: error.message || "Failed to list coupons" }), { status: 400 });
   }
-
-  // Get total count
-  const countQuery = query.as<"count">().select(db.fn.count("id").as("count"));
-  const countResult = await countQuery.executeTakeFirstOrThrow();
-  const total = Number(countResult.count);
-
-  // Get paginated results
-  const coupons = await query
-    .orderBy("createdAt", "desc")
-    .limit(input.limit)
-    .offset(offset)
-    .execute();
-
-  return {
-    coupons: coupons.map((c) => ({
-      id: c.id,
-      code: c.code,
-      name: c.name,
-      description: c.description,
-      type: c.type as "percentage" | "fixed_amount" | "free_shipping",
-      value: c.value,
-      minPurchaseAmount: c.minPurchaseAmount,
-      maxDiscountAmount: c.maxDiscountAmount,
-      usageLimit: c.usageLimit,
-      usageLimitPerUser: c.usageLimitPerUser,
-      usedCount: c.usedCount,
-      status: c.status as "active" | "inactive" | "expired",
-      startsAt: c.startsAt,
-      expiresAt: c.expiresAt,
-      firstOrderOnly: c.firstOrderOnly,
-      createdAt: c.createdAt,
-    })),
-    total,
-    page: input.page,
-    totalPages: Math.ceil(total / input.limit),
-  };
 }

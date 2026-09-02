@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GlobalContextProviders } from "./components/_globalContextProviders";
+import { ScrollToHashElement } from "./components/ScrollToHashElement";
 
 // Page imports
 import LandingPage from "./pages/landing";
@@ -45,7 +46,13 @@ import AdminDashboardPage from "./pages/admin.dashboard";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <GlobalContextProviders>
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <ScrollToHashElement />
         <Routes>
           {/* Public landing page */}
           <Route path="/" element={<IndexPage />} />

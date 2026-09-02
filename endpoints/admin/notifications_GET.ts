@@ -1,21 +1,21 @@
-import { NextRequest } from 'next/server';
-import { getSessionUser } from '../../../helpers/getServerUserSession';
-import { db } from '../../../lib/db';
+// endpoints/admin/notifications_GET.ts
+import { getSessionUser } from '../../helpers/getServerUserSession';
+import { db } from '../../lib/db';
 
-export async function GET(request: NextRequest): Promise<Response> {
+// Express-style handler function
+export async function handle(req: any, res: any) {
   try {
-    // Get authenticated user
-    const user = await getSessionUser();
-    
+    // Get authenticated user from request
+    const user = await getSessionUser(req);
+
     if (!user) {
-      return Response.json(
-        { error: 'Unauthorized. Please log in.' },
-        { status: 401 }
-      );
+      return res.status(401).json({
+        error: 'Unauthorized. Please log in.'
+      });
     }
 
     // Check if user is platform admin
-    const isAdmin = await db.query(`
+    const isAdminResult = await db.query(`
       SELECT EXISTS (
         SELECT 1 FROM user_roles ur
         JOIN roles r ON ur.role_id = r.id
@@ -23,18 +23,16 @@ export async function GET(request: NextRequest): Promise<Response> {
       ) as is_admin
     `, [user.id]);
 
-    if (!isAdmin[0]?.is_admin) {
-      return Response.json(
-        { error: 'Forbidden. Platform admin access required.' },
-        { status: 403 }
-      );
+    if (!isAdminResult[0]?.is_admin) {
+      return res.status(403).json({
+        error: 'Forbidden. Platform admin access required.'
+      });
     }
 
     // Parse query parameters
-    const { searchParams } = new URL(request.url);
-    const days = parseInt(searchParams.get('days') || '30');
-    const tenantId = searchParams.get('tenantId');
-    const status = searchParams.get('status');
+    const days = parseInt(req.query.days || '30');
+    const tenantId = req.query.tenantId;
+    const status = req.query.status;
 
     // Build query
     let query = `
@@ -137,7 +135,7 @@ export async function GET(request: NextRequest): Promise<Response> {
 
     const recentFailures = await db.query(failuresQuery);
 
-    return Response.json({
+    return res.json({
       success: true,
       data: {
         summary: summary[0],
@@ -149,9 +147,9 @@ export async function GET(request: NextRequest): Promise<Response> {
 
   } catch (error) {
     console.error('Get notifications stats error:', error);
-    return Response.json(
-      { error: 'Failed to get notification statistics', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return res.status(500).json({
+      error: 'Failed to get notification statistics',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 }

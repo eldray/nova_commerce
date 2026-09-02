@@ -1,84 +1,67 @@
-import { Request, Response } from 'express';
-import { authenticateUser } from '../../middleware/auth';
-import { db } from '../../config/database';
+import { requireAuth } from "../../middleware/auth";
+import { db } from "../../helpers/db";
+import superjson from "superjson";
 
-interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    email: string;
-    role: string;
-  };
-}
-
-export const get = async (req: AuthRequest, res: Response) => {
+export async function handle(request: Request) {
   try {
-    const user = authenticateUser(req);
-    
-    if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Unauthorized' 
-      });
-    }
+    const { user } = await requireAuth(request);
 
-    const domains = await db.query(
-      `SELECT 
-        cd.id,
-        cd.domain,
-        cd.status,
-        cd.verification_token,
-        cd.created_at,
-        cd.verified_at,
-        cd.ssl_enabled,
-        cd.ssl_status,
-        s.subdomain,
-        s.custom_domain as active_custom_domain
-       FROM custom_domains cd
-       LEFT JOIN stores s ON s.user_id = cd.user_id
-       WHERE cd.user_id = ? 
-       ORDER BY cd.created_at DESC`,
-      [user.id]
-    );
+    const domains = await db
+      .selectFrom("customDomains")
+      .selectAll()
+      .where("userId", "=", user.id)
+      .orderBy("createdAt", "desc")
+      .execute();
 
-    // Format response with helpful status information
-    const formattedDomains = domains.map((d: any) => ({
+    const store = await db
+      .selectFrom("stores")
+      .select(["subdomain", "customDomain"])
+      .where("tenantId", "=", user.id)
+      .executeTakeFirst();
+
+    const formattedDomains = domains.map((d) => ({
       id: d.id,
       domain: d.domain,
       status: d.status,
-      createdAt: d.created_at,
-      verifiedAt: d.verified_at,
-      sslEnabled: d.ssl_enabled,
-      sslStatus: d.ssl_status,
-      isActive: d.status === 'verified',
-      storeUrl: d.status === 'verified' 
-        ? `https://${d.domain}` 
-        : `https://${d.subdomain || 'store'}.nova-commerce.app`,
+      createdAt: d.createdAt,
+      verifiedAt: d.verifiedAt,
+      sslEnabled: d.sslEnabled,
+      sslStatus: d.sslStatus,
+      isActive: d.status === "verified",
+      storeUrl: d.status === "verified"
+        ? `https://${d.domain}`
+        : `https://${store?.subdomain || "store"}.nova-commerce.app`,
       dnsInstructions: {
         cname: {
-          type: 'CNAME',
-          host: 'www',
-          value: 'nova-commerce.app',
-          configured: d.status === 'verified'
+          type: "CNAME",
+          host: "www",
+          value: "nova-commerce.app",
+          configured: d.status === "verified",
         },
         txt: {
-          type: 'TXT',
-          host: '@',
-          value: `nova-commerce-verification=${d.verification_token}`,
-          configured: d.status === 'verified'
-        }
-      }
+          type: "TXT",
+          host: "@",
+          value: `nova-commerce-verification=${d.verificationToken}`,
+          configured: d.status === "verified",
+        },
+      },
     }));
 
-    res.json({ 
-      success: true, 
-      domains: formattedDomains,
-      count: formattedDomains.length
-    });
+    return new Response(
+      superjson.stringify({
+        success: true,
+        domains: formattedDomains,
+        count: formattedDomains.length,
+      })
+    );
   } catch (error: any) {
-    console.error('Error fetching domains:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message || 'Failed to fetch domains' 
-    });
+    console.error("Error fetching domains:", error);
+    return new Response(
+      superjson.stringify({
+        success: false,
+        error: error.message || "Failed to fetch domains",
+      }),
+      { status: error.cause?.status || 500 }
+    );
   }
-};
+}

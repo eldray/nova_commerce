@@ -29,3 +29,6 @@ export async function requireSuperAdmin(event: Request) {
   
   return { user, session };
 }
+
+export const authenticateAdmin = requireAdmin;
+export const authenticateUser = requireAuth;

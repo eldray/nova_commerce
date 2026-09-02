@@ -7,13 +7,12 @@ export default defineConfig({
   server: {
     port: 3000,
     open: false,
-    // Proxy API requests to your backend server
-    // Change 'http://localhost:8080' to your actual backend port if different
     proxy: {
       '/_api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/_api/, ''),
       },
       '/api': {
         target: 'http://localhost:8080',
@@ -33,12 +32,10 @@ export default defineConfig({
   },
   optimizeDeps: {
     esbuildOptions: {
-      // Node.js global to browser globalThis
       define: {
         global: 'globalThis',
       },
     },
-    // Include crypto-js or other crypto shims if you aren't using a plugin
     include: ['crypto-js'],
   },
   build: {
@@ -47,11 +44,9 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, 'index.html'),
       },
-      // Ensure templates are not treated as JS entries
       external: [],
     },
   },
-  // Define process.env for browser compatibility
   define: {
     'process.env': {},
     'global': 'globalThis',

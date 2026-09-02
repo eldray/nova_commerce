@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { postLoginWithPassword } from "../endpoints/auth/login_with_password_POST.schema";
+import { postLoginWithPassword } from "../endpoints/auth/login-with-password_POST.schema";
 import { useAuth } from "../helpers/useAuth";
 import { Input } from "./Input";
 import { Button } from "./Button";
@@ -18,10 +18,17 @@ export function PasswordLoginForm({ redirectTo = "/dashboard" }: { redirectTo?: 
     e.preventDefault();
     setError(null);
     setLoading(true);
+    
     try {
-      await postLoginWithPassword({ email, password });
-      refetchSession();
+      const result = await postLoginWithPassword({ email, password });
+      
+      if (!result || !result.user) {
+        throw new Error('No user data returned from login');
+      }
+      
+      await refetchSession();
       navigate(redirectTo);
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid credentials");
     } finally {
@@ -66,3 +73,6 @@ export function PasswordLoginForm({ redirectTo = "/dashboard" }: { redirectTo?: 
     </form>
   );
 }
+
+// Also export as default for compatibility
+export default PasswordLoginForm;

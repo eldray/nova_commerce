@@ -1,52 +1,52 @@
-import { getDb } from "../../../helpers/db";
-import type { Context } from "../../../helpers/context";
-import type { InputType, OutputType } from "./moderate_POST.schema";
+import { db } from "../../helpers/db";
+import { getServerUserSession } from "../../helpers/getServerUserSession";
+import superjson from "superjson";
+import { schema } from "./moderate_POST.schema";
 
-export async function handler(
-  input: InputType,
-  context: Context
-): Promise<OutputType> {
-  const db = await getDb();
-  const { tenantId, userId } = context;
+export async function handle(request: Request) {
+  try {
+    const { user, tenantId } = await getServerUserSession(request);
+    if (!user || !tenantId) {
+      return new Response(superjson.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
 
-  if (!tenantId) {
-    throw new Error("Tenant ID is required");
+    const json = superjson.parse(await request.text());
+    const input = schema.parse(json);
+
+    const review = await db
+      .selectFrom("productReviews")
+      .where("id", "=", input.reviewId)
+      .where("tenantId", "=", tenantId)
+      .selectAll()
+      .executeTakeFirst();
+
+    if (!review) {
+      return new Response(superjson.stringify({ error: "Review not found" }), { status: 404 });
+    }
+
+    const result = await db
+      .updateTable("productReviews")
+      .set({
+        status: input.status,
+        merchantResponse: input.merchantResponse || null,
+        merchantResponseAt: input.merchantResponse ? new Date() : null,
+        respondedByUserId: input.merchantResponse ? user.id : null,
+        updatedAt: new Date(),
+      })
+      .where("id", "=", input.reviewId)
+      .returning(["id", "status", "merchantResponse", "merchantResponseAt"])
+      .executeTakeFirstOrThrow();
+
+    return new Response(
+      superjson.stringify({
+        id: result.id,
+        status: result.status,
+        merchantResponse: result.merchantResponse,
+        merchantResponseAt: result.merchantResponseAt,
+      })
+    );
+  } catch (error: any) {
+    console.error("Error moderating review:", error);
+    return new Response(superjson.stringify({ error: error.message || "Failed to moderate review" }), { status: 400 });
   }
-
-  if (!userId) {
-    throw new Error("User ID is required");
-  }
-
-  // Verify review exists and belongs to tenant
-  const review = await db
-    .selectFrom("product_reviews")
-    .where("id", "=", input.reviewId)
-    .where("tenantId", "=", tenantId)
-    .selectAll()
-    .executeTakeFirst();
-
-  if (!review) {
-    throw new Error("Review not found");
-  }
-
-  // Update the review
-  const result = await db
-    .updateTable("product_reviews")
-    .set({
-      status: input.status,
-      merchantResponse: input.merchantResponse || null,
-      merchantResponseAt: input.merchantResponse ? new Date() : null,
-      respondedByUserId: input.merchantResponse ? userId : null,
-      updatedAt: new Date(),
-    })
-    .where("id", "=", input.reviewId)
-    .returning(["id", "status", "merchantResponse", "merchantResponseAt"])
-    .executeTakeFirstOrThrow();
-
-  return {
-    id: result.id,
-    status: result.status as "pending" | "approved" | "rejected",
-    merchantResponse: result.merchantResponse,
-    merchantResponseAt: result.merchantResponseAt,
-  };
 }

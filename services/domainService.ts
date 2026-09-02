@@ -1,4 +1,4 @@
-import { db } from '../config/database';
+import { db } from "../helpers/db";
 
 export interface DomainValidationResult {
   isValid: boolean;
@@ -8,147 +8,138 @@ export interface DomainValidationResult {
 export class DomainService {
   static async validateDomain(domain: string): Promise<DomainValidationResult> {
     const issues: string[] = [];
-    
+
     // Basic domain format validation
     const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$/;
     if (!domainRegex.test(domain)) {
-      issues.push('Invalid domain format');
+      issues.push("Invalid domain format");
       return { isValid: false, issues };
     }
 
     // Check if domain already exists in system
-    const existing = await db.query(
-      `SELECT id FROM custom_domains WHERE domain = ?`,
-      [domain.toLowerCase()]
-    );
+    const existing = await db
+      .selectFrom("customDomains")
+      .select("id")
+      .where("domain", "=", domain.toLowerCase())
+      .executeTakeFirst();
 
-    if (existing.length > 0) {
-      issues.push('Domain already registered to another store');
+    if (existing) {
+      issues.push("Domain already registered to another store");
     }
 
     // Check for reserved domains
-    const reservedDomains = ['localhost', 'nova-commerce', 'app', 'admin', 'api', 'www'];
-    const subdomain = domain.split('.')[0].toLowerCase();
+    const reservedDomains = ["localhost", "nova-commerce", "app", "admin", "api", "www"];
+    const subdomain = domain.split(".")[0].toLowerCase();
     if (reservedDomains.includes(subdomain)) {
-      issues.push('This domain name is reserved');
+      issues.push("This domain name is reserved");
     }
 
     return {
       isValid: issues.length === 0,
-      issues
+      issues,
     };
   }
 
   static async addDomain(userId: number, domain: string): Promise<any> {
     const validation = await this.validateDomain(domain);
-    
+
     if (!validation.isValid) {
-      throw new Error(`Invalid domain: ${validation.issues.join(', ')}`);
+      throw new Error(`Invalid domain: ${validation.issues.join(", ")}`);
     }
 
     const verificationToken = `nv-${Math.random().toString(36).substring(2, 11)}-${Date.now()}`;
-    
-    const result = await db.query(
-      `INSERT INTO custom_domains (user_id, domain, status, verification_token, created_at) 
-       VALUES (?, ?, 'pending', ?, NOW())`,
-      [userId, domain.toLowerCase(), verificationToken]
-    );
 
-    return {
-      id: result.insertId,
-      domain: domain.toLowerCase(),
-      verificationToken,
-      status: 'pending'
-    };
+    const inserted = await db
+      .insertInto("customDomains")
+      .values({
+        userId,
+        domain: domain.toLowerCase(),
+        status: "pending",
+        verificationToken,
+      })
+      .returning(["id", "domain", "verificationToken", "status"])
+      .executeTakeFirstOrThrow();
+
+    return inserted;
   }
 
   static async verifyDomain(domainId: number): Promise<boolean> {
-    const domainRecord = await db.query(
-      `SELECT domain, verification_token FROM custom_domains WHERE id = ? AND status = 'pending'`,
-      [domainId]
-    );
-    
-    if (!domainRecord[0]) {
+    const domainRecord = await db
+      .selectFrom("customDomains")
+      .select(["domain", "verificationToken", "userId"])
+      .where("id", "=", domainId)
+      .where("status", "=", "pending")
+      .executeTakeFirst();
+
+    if (!domainRecord) {
       return false;
     }
 
-    const { domain, verification_token } = domainRecord[0];
-    
-    // In production, this would check actual DNS records
-    // For now, we'll simulate verification after a delay
-    // The frontend will poll this endpoint
-    
-    const isVerified = await this.checkDNSRecords(domain, verification_token);
-    
+    const isVerified = await this.checkDNSRecords(domainRecord.domain, domainRecord.verificationToken);
+
     if (isVerified) {
-      await db.query(
-        `UPDATE custom_domains 
-         SET status = 'verified', verified_at = NOW() 
-         WHERE id = ?`,
-        [domainId]
-      );
-      
+      await db
+        .updateTable("customDomains")
+        .set({
+          status: "verified",
+          verifiedAt: new Date(),
+        })
+        .where("id", "=", domainId)
+        .execute();
+
       // Update store with custom domain
-      await db.query(
-        `UPDATE stores 
-         SET custom_domain = ?, ssl_enabled = TRUE 
-         WHERE user_id = (SELECT user_id FROM custom_domains WHERE id = ?)`,
-        [domain, domainId]
-      );
-      
+      await db
+        .updateTable("stores")
+        .set({
+          customDomain: domainRecord.domain,
+          sslEnabled: true,
+        })
+        .where("tenantId", "=", domainRecord.userId)
+        .execute();
+
       return true;
     }
-    
+
     return false;
   }
 
-  static async checkDNSRecords(domain: string, token: string): Promise<boolean> {
-    // In production, use dns.promises or a DNS provider API
-    // This is a placeholder that returns false until real DNS is set up
-    // Frontend will show instructions and keep polling
-    
+  static async checkDNSRecords(_domain: string, _token: string): Promise<boolean> {
     try {
-      // Simulate DNS check - in real implementation:
-      // 1. Check CNAME record points to nova-commerce.app
-      // 2. Check TXT record contains verification token
-      
-      // For demo purposes, allow manual verification via admin panel
       return false;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
 
   static async getDomainByUserId(userId: number): Promise<any[]> {
-    const domains = await db.query(
-      `SELECT id, domain, status, verification_token, created_at, verified_at 
-       FROM custom_domains 
-       WHERE user_id = ? 
-       ORDER BY created_at DESC`,
-      [userId]
-    );
-    
-    return domains;
+    return await db
+      .selectFrom("customDomains")
+      .selectAll()
+      .where("userId", "=", userId)
+      .orderBy("createdAt", "desc")
+      .execute();
   }
 
   static async deleteDomain(domainId: number, userId: number): Promise<void> {
-    const result = await db.query(
-      `DELETE FROM custom_domains WHERE id = ? AND user_id = ?`,
-      [domainId, userId]
-    );
-    
-    if (result.affectedRows === 0) {
-      throw new Error('Domain not found or access denied');
+    const result = await db
+      .deleteFrom("customDomains")
+      .where("id", "=", domainId)
+      .where("userId", "=", userId)
+      .executeTakeFirst();
+
+    if (Number(result.numDeletedRows) === 0) {
+      throw new Error("Domain not found or access denied");
     }
   }
 
   static async forceVerifyDomain(domainId: number): Promise<void> {
-    // Admin-only function to manually verify a domain
-    await db.query(
-      `UPDATE custom_domains 
-       SET status = 'verified', verified_at = NOW() 
-       WHERE id = ?`,
-      [domainId]
-    );
+    await db
+      .updateTable("customDomains")
+      .set({
+        status: "verified",
+        verifiedAt: new Date(),
+      })
+      .where("id", "=", domainId)
+      .execute();
   }
 }

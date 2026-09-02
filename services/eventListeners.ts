@@ -1,5 +1,5 @@
-import { db } from '../lib/db';
-import { emailService } from './emailService';
+import { db } from "../helpers/db";
+import { emailService } from "./emailService";
 
 /**
  * Event Listeners Service
@@ -11,7 +11,7 @@ export class EventListeners {
    * Initialize all event listeners
    */
   static async init() {
-    console.log('📧 Event listeners initialized');
+    console.log("📧 Event listeners initialized");
   }
 
   /**
@@ -19,16 +19,14 @@ export class EventListeners {
    */
   static async onOrderCreated(order: any) {
     try {
-      // Send order confirmation to customer
-      const customerEmail = order.customer_email;
+      const customerEmail = order.customer_email || order.customerEmail;
       if (customerEmail) {
         await emailService.sendOrderConfirmation(order, customerEmail);
       }
 
-      // Notify merchant about new order (if they have staff)
       await this.notifyMerchantNewOrder(order);
     } catch (error) {
-      console.error('Error in onOrderCreated:', error);
+      console.error("Error in onOrderCreated:", error);
     }
   }
 
@@ -37,16 +35,15 @@ export class EventListeners {
    */
   static async onOrderStatusUpdated(order: any, newStatus: string) {
     try {
-      const customerEmail = order.customer_email;
+      const customerEmail = order.customer_email || order.customerEmail;
       if (!customerEmail) return;
 
-      // Check if customer wants status update emails
-      const prefs = await this.getUserPreferences(order.customer_id);
-      if (!prefs.email_order_status_update) return;
+      const prefs = await this.getUserPreferences(order.customer_id || order.customerId);
+      if (prefs && !prefs.emailOrderStatusUpdate) return;
 
       await emailService.sendOrderStatusUpdate(order, customerEmail, newStatus);
     } catch (error) {
-      console.error('Error in onOrderStatusUpdated:', error);
+      console.error("Error in onOrderStatusUpdated:", error);
     }
   }
 
@@ -55,13 +52,12 @@ export class EventListeners {
    */
   static async onPaymentSuccess(payment: any) {
     try {
-      // Send payment receipt to customer
-      const customerEmail = payment.customer_email;
+      const customerEmail = payment.customer_email || payment.customerEmail;
       if (customerEmail) {
         await emailService.sendPaymentReceipt(payment, customerEmail);
       }
     } catch (error) {
-      console.error('Error in onPaymentSuccess:', error);
+      console.error("Error in onPaymentSuccess:", error);
     }
   }
 
@@ -70,19 +66,22 @@ export class EventListeners {
    */
   static async onLowStock(product: any, tenantId: number) {
     try {
-      // Get store owner/manager emails
       const merchantEmails = await this.getMerchantEmails(tenantId);
-      
-      for (const email of merchantEmails) {
-        // Check preferences
-        const prefs = await this.getUserPreferencesByEmail(email, tenantId);
-        if (prefs && !prefs.email_low_stock_alert) continue;
 
-        const store = await db.store.findFirst({ where: { tenant_id: tenantId } });
-        await emailService.sendLowStockAlert(product, store?.name || 'Your Store', email);
+      for (const email of merchantEmails) {
+        const prefs = await this.getUserPreferencesByEmail(email, tenantId);
+        if (prefs && !prefs.emailLowStockAlert) continue;
+
+        const store = await db
+          .selectFrom("stores")
+          .select("storeName")
+          .where("tenantId", "=", tenantId)
+          .executeTakeFirst();
+
+        await emailService.sendLowStockAlert(product, store?.storeName || "Your Store", email);
       }
     } catch (error) {
-      console.error('Error in onLowStock:', error);
+      console.error("Error in onLowStock:", error);
     }
   }
 
@@ -93,7 +92,7 @@ export class EventListeners {
     try {
       await emailService.sendWelcomeMerchant(user, storeName);
     } catch (error) {
-      console.error('Error in onMerchantRegistered:', error);
+      console.error("Error in onMerchantRegistered:", error);
     }
   }
 
@@ -104,7 +103,7 @@ export class EventListeners {
     try {
       await emailService.sendWelcomeCustomer(user);
     } catch (error) {
-      console.error('Error in onCustomerRegistered:', error);
+      console.error("Error in onCustomerRegistered:", error);
     }
   }
 
@@ -115,7 +114,7 @@ export class EventListeners {
     try {
       await emailService.sendPasswordReset(user, resetToken);
     } catch (error) {
-      console.error('Error in onPasswordResetRequested:', error);
+      console.error("Error in onPasswordResetRequested:", error);
     }
   }
 
@@ -126,7 +125,7 @@ export class EventListeners {
     try {
       await emailService.sendStaffInvitation(invite);
     } catch (error) {
-      console.error('Error in onStaffInvited:', error);
+      console.error("Error in onStaffInvited:", error);
     }
   }
 
@@ -135,13 +134,14 @@ export class EventListeners {
    */
   static async onSubscriptionRenewal(subscription: any) {
     try {
-      const merchantEmails = await this.getMerchantEmails(subscription.tenant_id);
-      
+      const tenantId = subscription.tenant_id || subscription.tenantId;
+      const merchantEmails = await this.getMerchantEmails(tenantId);
+
       for (const email of merchantEmails) {
         await emailService.sendSubscriptionRenewal(subscription, email);
       }
     } catch (error) {
-      console.error('Error in onSubscriptionRenewal:', error);
+      console.error("Error in onSubscriptionRenewal:", error);
     }
   }
 
@@ -149,68 +149,73 @@ export class EventListeners {
    * Helper: Get user preferences by user ID
    */
   private static async getUserPreferences(userId: number) {
-    const prefs = await db.query(`
-      SELECT * FROM notification_preferences
-      WHERE user_id = $1
-      LIMIT 1
-    `, [userId]);
+    if (!userId) return null;
+    const prefs = await db
+      .selectFrom("notificationPreferences")
+      .selectAll()
+      .where("userId", "=", userId)
+      .executeTakeFirst();
 
-    if (prefs.length === 0) {
+    if (!prefs) {
       return {
-        email_order_confirmation: true,
-        email_order_status_update: true,
-        email_payment_receipt: true,
-        email_password_reset: true,
-        email_low_stock_alert: true,
-        email_subscription_renewal: true,
-        email_marketing: false,
+        emailOrderConfirmation: true,
+        emailOrderStatusUpdate: true,
+        emailPaymentReceipt: true,
+        emailPasswordReset: true,
+        emailLowStockAlert: true,
+        emailSubscriptionRenewal: true,
+        emailMarketing: false,
       };
     }
 
-    return prefs[0];
+    return prefs;
   }
 
   /**
    * Helper: Get user preferences by email
    */
   private static async getUserPreferencesByEmail(email: string, tenantId: number) {
-    const result = await db.query(`
-      SELECT np.* FROM notification_preferences np
-      JOIN users u ON np.user_id = u.id
-      WHERE u.email = $1 AND np.tenant_id = $2
-      LIMIT 1
-    `, [email, tenantId]);
+    const user = await db
+      .selectFrom("users")
+      .select("id")
+      .where("email", "=", email)
+      .executeTakeFirst();
 
-    return result.length > 0 ? result[0] : null;
+    if (!user) return null;
+
+    return await db
+      .selectFrom("notificationPreferences")
+      .selectAll()
+      .where("userId", "=", user.id)
+      .where("tenantId", "=", tenantId)
+      .executeTakeFirst();
   }
 
   /**
    * Helper: Get merchant emails for a tenant
    */
   private static async getMerchantEmails(tenantId: number): Promise<string[]> {
-    const result = await db.query(`
-      SELECT DISTINCT u.email
-      FROM users u
-      JOIN user_roles ur ON u.id = ur.user_id
-      JOIN roles r ON ur.role_id = r.id
-      WHERE ur.tenant_id = $1 
-        AND r.name IN ('owner', 'administrator', 'manager')
-    `, [tenantId]);
+    const tenantUsers = await db
+      .selectFrom("tenantUsers")
+      .innerJoin("users", "users.id", "tenantUsers.userId")
+      .select("users.email")
+      .where("tenantUsers.tenantId", "=", tenantId)
+      .where("tenantUsers.role", "in", ["owner", "admin", "manager"])
+      .execute();
 
-    return result.map(row => row.email);
+    return tenantUsers.map((tu) => tu.email);
   }
 
   /**
    * Helper: Notify merchant about new order
    */
   private static async notifyMerchantNewOrder(order: any) {
-    const merchantEmails = await this.getMerchantEmails(order.tenant_id);
-    
+    const tenantId = order.tenant_id || order.tenantId;
+    const orderNumber = order.order_number || order.orderNumber;
+    const merchantEmails = await this.getMerchantEmails(tenantId);
+
     for (const email of merchantEmails) {
-      // Send new order notification (could be a separate template)
-      console.log(`Notifying merchant ${email} about new order #${order.order_number}`);
-      // In production, send actual email
-      // await emailService.queueEmail(email, `New Order #${order.order_number}`, 'new-order-merchant', { ... });
+      console.log(`Notifying merchant ${email} about new order #${orderNumber}`);
     }
   }
 }

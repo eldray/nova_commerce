@@ -1,109 +1,91 @@
-import { getDb } from "../../../helpers/db";
-import type { Context } from "../../../helpers/context";
-import type { InputType, OutputType } from "./create_POST.schema";
+import { db } from "../../helpers/db";
+import { getServerUserSession } from "../../helpers/getServerUserSession";
+import superjson from "superjson";
+import { schema } from "./create_POST.schema";
 
-export async function handler(
-  input: InputType,
-  context: Context
-): Promise<OutputType> {
-  const db = await getDb();
-  const { tenantId, userId } = context;
+export async function handle(request: Request) {
+  try {
+    const { user, tenantId } = await getServerUserSession(request);
+    if (!user || !tenantId) {
+      return new Response(superjson.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
 
-  if (!tenantId) {
-    throw new Error("Tenant ID is required");
-  }
+    const json = superjson.parse(await request.text());
+    const input = schema.parse(json);
 
-  if (!userId) {
-    throw new Error("You must be logged in to submit a review");
-  }
+    const product = await db
+      .selectFrom("products")
+      .where("id", "=", input.productId)
+      .where("tenantId", "=", tenantId)
+      .select(["id", "name"])
+      .executeTakeFirst();
 
-  // Verify product exists and belongs to tenant
-  const product = await db
-    .selectFrom("products")
-    .where("id", "=", input.productId)
-    .where("tenantId", "=", tenantId)
-    .select(["id", "name"])
-    .executeTakeFirst();
+    if (!product) {
+      return new Response(superjson.stringify({ error: "Product not found" }), { status: 404 });
+    }
 
-  if (!product) {
-    throw new Error("Product not found");
-  }
-
-  // Check if user already reviewed this product
-  const existingReview = await db
-    .selectFrom("product_reviews")
-    .where("productId", "=", input.productId)
-    .where("userId", "=", userId)
-    .select("id")
-    .executeTakeFirst();
-
-  if (existingReview) {
-    throw new Error("You have already reviewed this product");
-  }
-
-  // Check if this is a verified purchase (user bought this product)
-  let isVerifiedPurchase = false;
-  if (input.orderId) {
-    const order = await db
-      .selectFrom("orders")
-      .where("id", "=", input.orderId)
-      .where("userId", "=", userId)
-      .where("status", "in", ["completed", "delivered"] as any)
+    const existingReview = await db
+      .selectFrom("productReviews")
+      .where("productId", "=", input.productId)
+      .where("userId", "=", user.id)
       .select("id")
       .executeTakeFirst();
 
-    if (order) {
-      // Check if the order contains this product
-      const orderItem = await db
-        .selectFrom("order_items")
-        .where("orderId", "=", input.orderId)
-        .where("productId", "=", input.productId)
+    if (existingReview) {
+      return new Response(superjson.stringify({ error: "You have already reviewed this product" }), { status: 400 });
+    }
+
+    let isVerifiedPurchase = false;
+    if (input.orderId) {
+      const order = await db
+        .selectFrom("orders")
+        .where("id", "=", input.orderId)
+        .where("tenantId", "=", tenantId)
         .select("id")
         .executeTakeFirst();
 
-      if (orderItem) {
-        isVerifiedPurchase = true;
+      if (order) {
+        const orderItem = await db
+          .selectFrom("orderItems")
+          .where("orderId", "=", input.orderId)
+          .where("productId", "=", input.productId)
+          .select("id")
+          .executeTakeFirst();
+
+        if (orderItem) {
+          isVerifiedPurchase = true;
+        }
       }
     }
-  } else {
-    // Check if user has any completed orders with this product
-    const verifiedOrder = await db
-      .selectFrom("orders")
-      .innerJoin("order_items", "order_items.orderId", "orders.id")
-      .where("orders.userId", "=", userId)
-      .where("order_items.productId", "=", input.productId)
-      .where("orders.status", "in", ["completed", "delivered"] as any)
-      .select("orders.id")
-      .executeTakeFirst();
 
-    if (verifiedOrder) {
-      isVerifiedPurchase = true;
-    }
+    const result = await db
+      .insertInto("productReviews")
+      .values({
+        tenantId,
+        productId: input.productId,
+        userId: user.id,
+        orderId: input.orderId || null,
+        rating: input.rating,
+        title: input.title || null,
+        content: input.content,
+        status: "pending",
+        isVerifiedPurchase,
+        helpfulCount: 0,
+        notHelpfulCount: 0,
+        images: input.images || [],
+      })
+      .returning(["id", "status", "isVerifiedPurchase"])
+      .executeTakeFirstOrThrow();
+
+    return new Response(
+      superjson.stringify({
+        id: result.id,
+        status: result.status,
+        isVerifiedPurchase: result.isVerifiedPurchase,
+      })
+    );
+  } catch (error: any) {
+    console.error("Error creating review:", error);
+    return new Response(superjson.stringify({ error: error.message || "Failed to create review" }), { status: 400 });
   }
-
-  // Create the review
-  const result = await db
-    .insertInto("product_reviews")
-    .values({
-      tenantId,
-      productId: input.productId,
-      userId,
-      orderId: input.orderId || null,
-      rating: input.rating,
-      title: input.title || null,
-      content: input.content,
-      status: "pending",
-      isVerifiedPurchase,
-      helpfulCount: 0,
-      notHelpfulCount: 0,
-      images: input.images || [],
-    })
-    .returning(["id", "status", "isVerifiedPurchase"])
-    .executeTakeFirstOrThrow();
-
-  return {
-    id: result.id,
-    status: result.status as "pending" | "approved" | "rejected",
-    isVerifiedPurchase: result.isVerifiedPurchase,
-  };
 }

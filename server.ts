@@ -143,7 +143,7 @@ async function nodeRequestToFetchRequest(req: http.IncomingMessage, url: string)
   return new Request(url, {
     method: req.method,
     headers,
-    body: body && body.length > 0 ? body : undefined,
+    body: body && body.length > 0 ? new Uint8Array(body) : undefined,
   });
 }
 

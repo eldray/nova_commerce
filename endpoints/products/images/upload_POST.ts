@@ -1,167 +1,118 @@
-import { NextRequest } from 'next/server';
-import { z } from 'zod';
+// endpoints/products/images/upload_POST.ts
 import { getSessionUser } from '../../../helpers/getServerUserSession';
+import { uploadFile, validateFileType } from '../../../helpers/cloudinary';
 import { db } from '../../../lib/db';
-import { uploadToS3 } from '../../../services/cloudStorage';
-import { uploadImageSchema, ImageUploadResponse } from './upload_POST.schema';
 
-export const config = {
-  api: {
-    bodyParser: false, // Disable default body parser for file uploads
-  },
-};
+export async function handle(req: any, res: any) {
+  let user;
 
-export async function POST(request: NextRequest): Promise<Response> {
   try {
-    // Get authenticated user
-    const user = await getSessionUser();
-    
-    if (!user) {
-      return Response.json(
-        { error: 'Unauthorized. Please log in.' },
-        { status: 401 }
-      );
-    }
+    user = await getSessionUser(req);
+  } catch (error) {
+    user = null;
+  }
 
-    // Parse form data
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const productId = formData.get('productId') as string;
-    const altText = formData.get('altText') as string | null;
+  try {
+    // Assuming you're using multer or similar for file uploads
+    // If using multipart/form-data, you need to parse it
+    const file = req.file;
+    const { productId } = req.body;
 
-    // Validate inputs
-    const validation = uploadImageSchema.safeParse({ productId });
-    if (!validation.success) {
-      return Response.json(
-        { error: 'Invalid product ID', details: validation.error.errors },
-        { status: 400 }
-      );
-    }
-
-    const parsedProductId = validation.data.productId;
-
-    // Validate file
     if (!file) {
-      return Response.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
-    }
-
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      return Response.json(
-        { error: 'Invalid file type. Only JPEG, PNG, and WEBP are allowed.' },
-        { status: 400 }
-      );
-    }
-
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      return Response.json(
-        { error: 'File size exceeds 10MB limit' },
-        { status: 400 }
-      );
-    }
-
-    // Verify product ownership
-    const product = await db.product.findFirst({
-      where: {
-        id: parsedProductId,
-        tenant_id: user.tenant_id,
-        deleted_at: null,
-      },
-    });
-
-    if (!product) {
-      return Response.json(
-        { error: 'Product not found or you do not have permission' },
-        { status: 404 }
-      );
-    }
-
-    // Convert File to Buffer for S3 upload
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Create mock Express.Multer.File for cloudStorage service
-    const multerFile = {
-      fieldname: 'file',
-      originalname: file.name,
-      encoding: '7bit',
-      mimetype: file.type,
-      buffer,
-      size: file.size,
-    } as Express.Multer.File;
-
-    // Upload to S3
-    const uploadResult = await uploadToS3(multerFile, user.tenant_id, parsedProductId);
-
-    // Get image dimensions (simplified - in production use sharp library)
-    let width: number | null = null;
-    let height: number | null = null;
-    
-    // Simple dimension extraction could be added here with 'sharp' package
-    // For now, we'll store null and update later if needed
-
-    // Check if this is the first image (make it primary)
-    const existingImagesCount = await db.product_images.count({
-      where: {
-        product_id: parsedProductId,
-        deleted_at: null,
-      },
-    });
-
-    const isPrimary = existingImagesCount === 0;
-
-    // Save to database
-    const newImage = await db.product_images.insert({
-      product_id: parsedProductId,
-      tenant_id: user.tenant_id,
-      url: uploadResult.url,
-      thumbnail_url: uploadResult.thumbnailUrl || null,
-      alt_text: altText,
-      sort_order: existingImagesCount,
-      is_primary: isPrimary,
-      file_key: uploadResult.key,
-      file_size: file.size,
-      mime_type: file.type,
-      width,
-      height,
-    }).returning();
-
-    // Update product primary image if this is the first image
-    if (isPrimary) {
-      await db.product.update({
-        where: { id: parsedProductId },
-        data: { primary_image_url: uploadResult.url },
+      return res.status(400).json({
+        success: false,
+        error: 'No file provided'
       });
     }
 
-    const response: ImageUploadResponse = {
-      success: true,
-      image: {
-        id: newImage[0].id,
-        url: newImage[0].url,
-        thumbnailUrl: newImage[0].thumbnail_url,
-        altText: newImage[0].alt_text,
-        sortOrder: newImage[0].sort_order,
-        isPrimary: newImage[0].is_primary,
-        fileSize: newImage[0].file_size,
-        mimeType: newImage[0].mime_type,
-        width: newImage[0].width,
-        height: newImage[0].height,
-      },
-      message: 'Image uploaded successfully',
-    };
+    if (!productId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Product ID is required'
+      });
+    }
 
-    return Response.json(response, { status: 201 });
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!validTypes.includes(file.mimetype)) {
+      return res.status(400).json({
+        success: false,
+        error: 'File must be JPEG, PNG, or WebP'
+      });
+    }
 
-  } catch (error) {
-    console.error('Image upload error:', error);
-    return Response.json(
-      { error: 'Failed to upload image', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      return res.status(400).json({
+        success: false,
+        error: 'File size must be less than 5MB'
+      });
+    }
+
+    // Validate file type using magic numbers
+    const isValidType = validateFileType(file.buffer, ['jpg', 'jpeg', 'png', 'webp']);
+    if (!isValidType) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid file format'
+      });
+    }
+
+    // Create tenant-specific folder path
+    const tenantFolder = user
+      ? `products/tenant_${user.tenantId || 'default'}`
+      : 'products';
+
+    // Upload to Cloudinary
+    const result = await uploadFile(file.buffer, {
+      folder: tenantFolder,
+      allowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
+      maxFileSize: 5 * 1024 * 1024,
+    });
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: result.error
+      });
+    }
+
+    // Save image record to database
+    const imageResult = await db.query(
+      `INSERT INTO product_images (
+        product_id, 
+        url, 
+        thumbnail_url, 
+        tenant_id, 
+        is_primary, 
+        sort_order,
+        file_size,
+        mime_type
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *`,
+      [
+        parseInt(productId),
+        result.url,
+        result.thumbnailUrl || null,
+        user?.tenantId || null,
+        false,
+        0,
+        file.size,
+        file.mimetype
+      ]
     );
+
+    return res.status(200).json({
+      success: true,
+      image: imageResult[0],
+      message: 'Image uploaded successfully'
+    });
+
+  } catch (error: any) {
+    console.error('Upload error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Upload failed'
+    });
   }
 }

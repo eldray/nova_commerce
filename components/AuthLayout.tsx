@@ -6,11 +6,17 @@ interface AuthLayoutProps {
   children: React.ReactNode;
 }
 
-export const AuthLayout = ({ children }: AuthLayoutProps) => {
+export function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className={styles.wrapper}>
-      <Link to="/" className={styles.logo}>Nova Commerce</Link>
-      <div className={styles.card}>{children}</div>
+    <div className={styles.container}>
+      <div className={styles.card}>
+        <div className={styles.logo}>
+          <Link to="/">
+            <h1>Nova Commerce</h1>
+          </Link>
+        </div>
+        {children}
+      </div>
     </div>
   );
-};
+}

@@ -1,110 +1,100 @@
-import { Request, Response } from 'express';
-import { DomainService } from '../../services/domainService';
-import { authenticateUser } from '../../middleware/auth';
-import { db } from '../../config/database';
+import { requireAuth } from "../../middleware/auth";
+import { DomainService } from "../../services/domainService";
+import { db } from "../../helpers/db";
+import superjson from "superjson";
 
-interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    email: string;
-    role: string;
-  };
-}
-
-export const post = async (req: AuthRequest, res: Response) => {
+export async function handle(request: Request) {
   try {
-    const user = authenticateUser(req);
-    
-    if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Unauthorized' 
-      });
-    }
+    const { user } = await requireAuth(request);
 
-    const { domainId } = req.body;
+    const body = superjson.parse<{ domainId?: number }>(await request.text());
+    const { domainId } = body;
 
     if (!domainId) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Domain ID is required' 
-      });
+      return new Response(superjson.stringify({ error: "Domain ID is required" }), { status: 400 });
     }
 
-    // Verify domain ownership
-    const domainRecord = await db.query(
-      `SELECT * FROM custom_domains WHERE id = ? AND user_id = ?`,
-      [domainId, user.id]
-    );
+    const domainRecord = await db
+      .selectFrom("customDomains")
+      .selectAll()
+      .where("id", "=", domainId)
+      .where("userId", "=", user.id)
+      .executeTakeFirst();
 
-    if (!domainRecord[0]) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Domain not found' 
-      });
+    if (!domainRecord) {
+      return new Response(superjson.stringify({ error: "Domain not found" }), { status: 404 });
     }
 
-    if (domainRecord[0].status === 'verified') {
-      return res.json({ 
-        success: true, 
-        message: 'Domain already verified',
-        data: {
-          domainId: domainRecord[0].id,
-          domain: domainRecord[0].domain,
-          status: 'verified',
-          verifiedAt: domainRecord[0].verified_at
-        }
-      });
+    if (domainRecord.status === "verified") {
+      return new Response(
+        superjson.stringify({
+          success: true,
+          message: "Domain already verified",
+          data: {
+            domainId: domainRecord.id,
+            domain: domainRecord.domain,
+            status: "verified",
+            verifiedAt: domainRecord.verifiedAt,
+          },
+        })
+      );
     }
 
-    // Attempt verification
     const isVerified = await DomainService.verifyDomain(domainId);
 
     if (isVerified) {
-      const updatedDomain = await db.query(
-        `SELECT * FROM custom_domains WHERE id = ?`,
-        [domainId]
-      );
+      const updatedDomain = await db
+        .selectFrom("customDomains")
+        .selectAll()
+        .where("id", "=", domainId)
+        .executeTakeFirst();
 
-      res.json({ 
-        success: true, 
-        message: 'Domain verified successfully! Your store is now accessible at your custom domain.',
-        data: {
-          domainId: updatedDomain[0].id,
-          domain: updatedDomain[0].domain,
-          status: 'verified',
-          verifiedAt: updatedDomain[0].verified_at,
-          customDomain: updatedDomain[0].custom_domain,
-          sslEnabled: updatedDomain[0].ssl_enabled
-        }
-      });
+      return new Response(
+        superjson.stringify({
+          success: true,
+          message: "Domain verified successfully! Your store is now accessible at your custom domain.",
+          data: {
+            domainId: updatedDomain?.id,
+            domain: updatedDomain?.domain,
+            status: "verified",
+            verifiedAt: updatedDomain?.verifiedAt,
+            sslEnabled: updatedDomain?.sslEnabled,
+          },
+        })
+      );
     } else {
-      res.status(400).json({ 
-        success: false, 
-        message: 'DNS records not yet configured correctly. Please check your DNS settings and try again.',
-        data: {
-          domainId,
-          status: 'pending',
-          instructions: {
-            cname: {
-              type: 'CNAME',
-              host: 'www',
-              value: 'nova-commerce.app'
+      return new Response(
+        superjson.stringify({
+          success: false,
+          message: "DNS records not yet configured correctly. Please check your DNS settings and try again.",
+          data: {
+            domainId,
+            status: "pending",
+            instructions: {
+              cname: {
+                type: "CNAME",
+                host: "www",
+                value: "nova-commerce.app",
+              },
+              txt: {
+                type: "TXT",
+                host: "@",
+                value: `nova-commerce-verification=${domainRecord.verificationToken}`,
+              },
             },
-            txt: {
-              type: 'TXT',
-              host: '@',
-              value: `nova-commerce-verification=${domainRecord[0].verification_token}`
-            }
-          }
-        }
-      });
+          },
+        }),
+        { status: 400 }
+      );
     }
   } catch (error: any) {
-    console.error('Error verifying domain:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message || 'Failed to verify domain' 
-    });
+    console.error("Error verifying domain:", error);
+    return new Response(
+      superjson.stringify({
+        success: false,
+        error: error.message || "Failed to verify domain",
+      }),
+      { status: error.cause?.status || 500 }
+    );
   }
-};
+}

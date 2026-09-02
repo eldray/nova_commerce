@@ -1,76 +1,40 @@
 import { z } from "zod";
-import { createEndpoint } from "@kitql/helper";
 import superjson from "superjson";
-import { getServerUserSession } from "../../helpers/getServerUserSession";
-import { db } from "../../helpers/db";
-import { eq, and } from "drizzle-orm";
-import { tenants, stores, tenantUsers } from "../../helpers/schema";
 
-/**
- * POST /api/store/publish
- * 
- * Publishes or unpublishes a tenant's store.
- * Requires 'store.publish' permission.
- */
-export const POST = createEndpoint({
-  input: z.object({
-    publish: z.boolean().default(true),
-  }),
-  handler: async ({ publish }, event) => {
-    const { user, session, tenantId, tenantRole } = await getServerUserSession(event);
-
-    if (!user || !session) {
-      throw new Error("Unauthorized", { cause: { status: 401 } });
-    }
-
-    if (!tenantId) {
-      throw new Error("No tenant selected", { cause: { status: 400 } });
-    }
-
-    if (!tenantRole) {
-      throw new Error("User not associated with tenant", { cause: { status: 403 } });
-    }
-
-    // Verify tenant-user association
-    const tenantUser = await db.query.tenantUsers.findFirst({
-      where: and(
-        eq(tenantUsers.tenantId, tenantId),
-        eq(tenantUsers.userId, user.id)
-      ),
-    });
-
-    if (!tenantUser) {
-      throw new Error("User not found in tenant", { cause: { status: 403 } });
-    }
-
-    // Update store published status
-    const updatedStore = await db.transaction(async (tx) => {
-      const [store] = await tx.select().from(stores).where(eq(stores.tenantId, tenantId)).limit(1);
-
-      if (!store) {
-        throw new Error("Store not found for tenant", { cause: { status: 404 } });
-      }
-
-      const [updated] = await tx
-        .update(stores)
-        .set({
-          isPublished: publish,
-          updatedAt: new Date(),
-        })
-        .where(eq(stores.tenantId, tenantId))
-        .returning();
-
-      return updated;
-    });
-
-    return superjson.stringify({
-      success: true,
-      store: {
-        id: updatedStore.id,
-        isPublished: updatedStore.isPublished,
-        storeName: updatedStore.storeName,
-        subdomain: updatedStore.subdomain,
-      },
-    });
-  },
+export const schema = z.object({
+  publish: z.boolean().default(true),
 });
+
+export type InputType = z.infer<typeof schema>;
+
+export type OutputType = {
+  success: boolean;
+  store: {
+    id: number;
+    isPublished: boolean;
+    storeName: string;
+    subdomain: string;
+  };
+};
+
+export const postPublishStore = async (
+  body: InputType,
+  init?: RequestInit
+): Promise<OutputType> => {
+  const validatedInput = schema.parse(body);
+  const result = await fetch(`/_api/store/publish`, {
+    method: "POST",
+    body: superjson.stringify(validatedInput),
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+    credentials: "include",
+  });
+  if (!result.ok) {
+    const errorObject = superjson.parse<{ error: string }>(await result.text());
+    throw new Error(errorObject.error);
+  }
+  return superjson.parse<OutputType>(await result.text());
+};

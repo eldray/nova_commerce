@@ -1,101 +1,62 @@
-import { Request, Response } from 'express';
-import { DomainService } from '../../services/domainService';
-import { authenticateUser } from '../../middleware/auth';
-import { db } from '../../config/database';
+import { requireAuth } from "../../middleware/auth";
+import { DomainService } from "../../services/domainService";
+import { db } from "../../helpers/db";
+import superjson from "superjson";
 
-interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    email: string;
-    role: string;
-  };
-}
-
-export const post = async (req: AuthRequest, res: Response) => {
+export async function handle(request: Request) {
   try {
-    // Authenticate user
-    const user = authenticateUser(req);
-    
-    if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Unauthorized' 
-      });
+    const { user } = await requireAuth(request);
+
+    const body = superjson.parse<{ domain?: string }>(await request.text());
+    const { domain } = body;
+
+    if (!domain || typeof domain !== "string") {
+      return new Response(superjson.stringify({ error: "Domain name is required" }), { status: 400 });
     }
 
-    const { domain } = req.body;
+    const cleanedDomain = domain.toLowerCase().trim().replace(/^https?:\/\//, "").replace(/\/$/, "");
 
-    if (!domain || typeof domain !== 'string') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Domain name is required' 
-      });
+    const existingDomain = await db
+      .selectFrom("customDomains")
+      .select("id")
+      .where("userId", "=", user.id)
+      .where("status", "=", "verified")
+      .executeTakeFirst();
+
+    if (existingDomain) {
+      return new Response(
+        superjson.stringify({
+          error: "You already have a verified custom domain. Please remove it before adding a new one.",
+        }),
+        { status: 400 }
+      );
     }
 
-    // Clean and normalize domain
-    const cleanedDomain = domain.toLowerCase().trim();
-    
-    // Remove protocol if present
-    const domainWithoutProtocol = cleanedDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    const result = await DomainService.addDomain(user.id, cleanedDomain);
 
-    // Check if user already has a verified domain
-    const existingDomains = await db.query(
-      `SELECT * FROM custom_domains WHERE user_id = ? AND status = 'verified'`,
-      [user.id]
+    return new Response(
+      superjson.stringify({
+        success: true,
+        message: "Domain added successfully. Please configure your DNS records to verify ownership.",
+        data: {
+          domainId: result.id,
+          domain: result.domain,
+          verificationToken: result.verificationToken,
+          status: result.status,
+          nextSteps: [
+            "Add CNAME record: www -> nova-commerce.app",
+            "Add TXT record: @ -> nova-commerce-verification=" + result.verificationToken,
+            "Wait for DNS propagation (5-30 minutes)",
+            'Click "Verify" button to complete setup',
+          ],
+        },
+      }),
+      { status: 201 }
     );
-
-    if (existingDomains.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'You already have a verified custom domain. Please remove it before adding a new one.' 
-      });
-    }
-
-    // Add domain to system
-    const result = await DomainService.addDomain(user.id, domainWithoutProtocol);
-
-    // Create DNS instructions for this domain
-    await db.query(
-      `INSERT INTO domain_dns_instructions (domain_id, record_type, host, value, ttl) 
-       VALUES (?, 'CNAME', 'www', 'nova-commerce.app', 3600)`,
-      [result.id]
-    );
-
-    await db.query(
-      `INSERT INTO domain_dns_instructions (domain_id, record_type, host, value, ttl) 
-       VALUES (?, 'TXT', '@', CONCAT('nova-commerce-verification=', ?), 3600)`,
-      [result.id, result.verificationToken]
-    );
-
-    res.status(201).json({ 
-      success: true, 
-      message: 'Domain added successfully. Please configure your DNS records to verify ownership.',
-      data: {
-        domainId: result.id,
-        domain: result.domain,
-        verificationToken: result.verificationToken,
-        status: result.status,
-        nextSteps: [
-          'Add CNAME record: www -> nova-commerce.app',
-          'Add TXT record: @ -> nova-commerce-verification=' + result.verificationToken,
-          'Wait for DNS propagation (5-30 minutes)',
-          'Click "Verify" button to complete setup'
-        ]
-      }
-    });
   } catch (error: any) {
-    console.error('Error adding custom domain:', error);
-    
-    if (error.message.includes('already registered')) {
-      return res.status(409).json({ 
-        success: false, 
-        error: 'This domain is already registered to another store' 
-      });
-    }
-
-    res.status(500).json({ 
-      success: false, 
-      error: error.message || 'Failed to add domain' 
-    });
+    console.error("Error adding custom domain:", error);
+    const message = error.message || "Failed to add domain";
+    const status = message.includes("already registered") ? 409 : 500;
+    return new Response(superjson.stringify({ error: message }), { status });
   }
-};
+}

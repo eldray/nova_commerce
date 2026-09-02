@@ -1,108 +1,107 @@
-import { getDb } from "../../../helpers/db";
-import type { Context } from "../../../helpers/context";
-import type { InputType, OutputType } from "./helpful_POST.schema";
+import { db } from "../../helpers/db";
+import { getServerUserSession } from "../../helpers/getServerUserSession";
+import superjson from "superjson";
+import { schema } from "./helpful_POST.schema";
 
-export async function handler(
-  input: InputType,
-  context: Context
-): Promise<OutputType> {
-  const db = await getDb();
-  const { userId } = context;
+export async function handle(request: Request) {
+  try {
+    const { user } = await getServerUserSession(request);
+    if (!user) {
+      return new Response(superjson.stringify({ error: "You must be logged in to vote on reviews" }), { status: 401 });
+    }
 
-  if (!userId) {
-    throw new Error("You must be logged in to vote on reviews");
-  }
+    const json = superjson.parse(await request.text());
+    const input = schema.parse(json);
 
-  // Check if review exists
-  const review = await db
-    .selectFrom("product_reviews")
-    .where("id", "=", input.reviewId)
-    .select(["id", "helpfulCount", "notHelpfulCount"])
-    .executeTakeFirst();
+    const review = await db
+      .selectFrom("productReviews")
+      .where("id", "=", input.reviewId)
+      .select(["id", "helpfulCount", "notHelpfulCount"])
+      .executeTakeFirst();
 
-  if (!review) {
-    throw new Error("Review not found");
-  }
+    if (!review) {
+      return new Response(superjson.stringify({ error: "Review not found" }), { status: 404 });
+    }
 
-  // Check if user already voted
-  const existingVote = await db
-    .selectFrom("review_helpfulness")
-    .where("reviewId", "=", input.reviewId)
-    .where("userId", "=", userId)
-    .selectAll()
-    .executeTakeFirst();
+    const existingVote = await db
+      .selectFrom("reviewHelpfulness")
+      .where("reviewId", "=", input.reviewId)
+      .where("userId", "=", user.id)
+      .selectAll()
+      .executeTakeFirst();
 
-  let helpfulCount = Number(review.helpfulCount);
-  let notHelpfulCount = Number(review.notHelpfulCount);
-  let userVoted = false;
+    let helpfulCount = Number(review.helpfulCount);
+    let notHelpfulCount = Number(review.notHelpfulCount);
+    let userVoted = false;
 
-  if (existingVote) {
-    // User wants to change or remove vote
-    if (existingVote.isHelpful === input.isHelpful) {
-      // Remove vote (toggle off)
-      await db
-        .deleteFrom("review_helpfulness")
-        .where("reviewId", "=", input.reviewId)
-        .where("userId", "=", userId)
-        .execute();
+    if (existingVote) {
+      if (existingVote.isHelpful === input.isHelpful) {
+        await db
+          .deleteFrom("reviewHelpfulness")
+          .where("reviewId", "=", input.reviewId)
+          .where("userId", "=", user.id)
+          .execute();
 
-      if (existingVote.isHelpful) {
-        helpfulCount -= 1;
+        if (existingVote.isHelpful) {
+          helpfulCount = Math.max(0, helpfulCount - 1);
+        } else {
+          notHelpfulCount = Math.max(0, notHelpfulCount - 1);
+        }
+        userVoted = false;
       } else {
-        notHelpfulCount -= 1;
+        await db
+          .updateTable("reviewHelpfulness")
+          .set({ isHelpful: input.isHelpful })
+          .where("reviewId", "=", input.reviewId)
+          .where("userId", "=", user.id)
+          .execute();
+
+        if (input.isHelpful) {
+          helpfulCount += 1;
+          notHelpfulCount = Math.max(0, notHelpfulCount - 1);
+        } else {
+          helpfulCount = Math.max(0, helpfulCount - 1);
+          notHelpfulCount += 1;
+        }
+        userVoted = true;
       }
-      userVoted = false;
     } else {
-      // Change vote
       await db
-        .updateTable("review_helpfulness")
-        .set("isHelpful", input.isHelpful)
-        .where("reviewId", "=", input.reviewId)
-        .where("userId", "=", userId)
+        .insertInto("reviewHelpfulness")
+        .values({
+          reviewId: input.reviewId,
+          userId: user.id,
+          isHelpful: input.isHelpful,
+        })
         .execute();
 
       if (input.isHelpful) {
         helpfulCount += 1;
-        notHelpfulCount -= 1;
       } else {
-        helpfulCount -= 1;
         notHelpfulCount += 1;
       }
       userVoted = true;
     }
-  } else {
-    // New vote
+
     await db
-      .insertInto("review_helpfulness")
-      .values({
-        reviewId: input.reviewId,
-        userId,
-        isHelpful: input.isHelpful,
+      .updateTable("productReviews")
+      .set({
+        helpfulCount,
+        notHelpfulCount,
+        updatedAt: new Date(),
       })
+      .where("id", "=", input.reviewId)
       .execute();
 
-    if (input.isHelpful) {
-      helpfulCount += 1;
-    } else {
-      notHelpfulCount += 1;
-    }
-    userVoted = true;
+    return new Response(
+      superjson.stringify({
+        helpfulCount,
+        notHelpfulCount,
+        userVoted,
+      })
+    );
+  } catch (error: any) {
+    console.error("Error voting on review:", error);
+    return new Response(superjson.stringify({ error: error.message || "Failed to vote on review" }), { status: 400 });
   }
-
-  // Update the review counts
-  await db
-    .updateTable("product_reviews")
-    .set({
-      helpfulCount,
-      notHelpfulCount,
-      updatedAt: new Date(),
-    })
-    .where("id", "=", input.reviewId)
-    .execute();
-
-  return {
-    helpfulCount,
-    notHelpfulCount,
-    userVoted,
-  };
 }

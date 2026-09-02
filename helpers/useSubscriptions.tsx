@@ -47,7 +47,7 @@ export function useSubscriptions() {
   // Subscribe to a plan mutation
   const subscribeMutation = useMutation({
     mutationFn: async ({ planId, billingCycle }: { planId: number; billingCycle: 'monthly' | 'yearly' }) => {
-      return await client.POST('/api/subscriptions', { body: { planId, billingCycle } });
+      return await client.post('/api/subscriptions', { planId, billingCycle });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/subscriptions'] });
@@ -57,7 +57,7 @@ export function useSubscriptions() {
   // Cancel subscription mutation
   const cancelMutation = useMutation({
     mutationFn: async (reason?: string) => {
-      return await client.DELETE('/api/subscriptions', { body: { reason } });
+      return await client.delete('/api/subscriptions');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/subscriptions'] });
