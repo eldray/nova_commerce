@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { client } from '../../lib/client';
+import { client } from '../lib/client';
 
 interface SubscriptionPlan {
   id: number;

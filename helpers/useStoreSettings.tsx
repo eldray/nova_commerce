@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from './apiClient';
+import { client } from '../lib/client';
 
 export interface StoreStatus {
   id: number;
@@ -28,7 +28,7 @@ export function useStoreStatus(storeId?: number) {
   return useQuery({
     queryKey: ['store-status', storeId],
     queryFn: () =>
-      apiClient.get<StoreStatus>('/stores/status', {
+      client.get<StoreStatus>('/stores/status', {
         params: storeId ? { storeId: storeId.toString() } : {},
       }),
     staleTime: 30000, // 30 seconds
@@ -44,7 +44,7 @@ export function usePublishStore() {
 
   return useMutation({
     mutationFn: (data: PublishRequest) =>
-      apiClient.post<{ success: boolean; store: StoreStatus; message: string }>(
+      client.post<{ success: boolean; store: StoreStatus; message: string }>(
         '/stores/publish',
         data
       ),
@@ -64,7 +64,7 @@ export function useUnpublishStore() {
 
   return useMutation({
     mutationFn: (data: UnpublishRequest) =>
-      apiClient.post<{ success: boolean; store: StoreStatus; message: string }>(
+      client.post<{ success: boolean; store: StoreStatus; message: string }>(
         '/stores/unpublish',
         data
       ),
@@ -84,10 +84,10 @@ export function usePublishRequirements(storeId: number) {
     queryKey: ['publish-requirements', storeId],
     queryFn: async () => {
       const [products, categories] = await Promise.all([
-        apiClient.get<any[]>('/products/list', {
+        client.get<any[]>('/products/list', {
           params: { storeId: storeId.toString(), limit: '1' },
         }),
-        apiClient.get<any[]>('/categories/list', {
+        client.get<any[]>('/categories/list', {
           params: { storeId: storeId.toString() },
         }),
       ]);
