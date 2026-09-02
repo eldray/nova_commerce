@@ -52,7 +52,7 @@ export default function CheckoutPage() {
     const [couponError, setCouponError] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const checkout = useCheckout();
-    const couponValidation = useCoupons(store?.tenantId);
+    const couponValidation = useCoupons(store?.tenantId?.toString());
 
     const form = useForm({
         schema: formSchema,
