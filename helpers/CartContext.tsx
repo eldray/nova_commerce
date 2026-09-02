@@ -114,6 +114,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         setAppliedCoupon(null);
     };
 
+    const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.price * i.quantity, 0), [items]);
+    const itemCount = useMemo(() => items.reduce((sum, i) => sum + i.quantity, 0), [items]);
+
     const discountAmount = useMemo(() => {
         if (!appliedCoupon) return 0;
         
@@ -128,9 +131,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     const totalAfterDiscount = useMemo(() => {
         return Math.max(0, subtotal - discountAmount);
     }, [subtotal, discountAmount]);
-
-    const subtotal = useMemo(() => items.reduce((sum, i) => sum + i.price * i.quantity, 0), [items]);
-    const itemCount = useMemo(() => items.reduce((sum, i) => sum + i.quantity, 0), [items]);
 
     return (
         <CartContext.Provider value={{ 

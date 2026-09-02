@@ -1,13 +1,13 @@
 import { getServerUserSession } from "../helpers/getServerUserSession";
 
 export async function requireAuth(event: Request) {
-  const { user, session } = await getServerUserSession(event);
+  const user = await getServerUserSession(event);
   
-  if (!user || !session) {
+  if (!user || !user.session) {
     throw new Error("Unauthorized", { cause: { status: 401 } });
   }
   
-  return { user, session };
+  return { user, session: user.session };
 }
 
 export async function requireAdmin(event: Request) {

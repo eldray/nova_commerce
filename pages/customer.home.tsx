@@ -17,9 +17,11 @@ const formatMoney = (amount: number | string, currency: string = "GHS") =>
   );
 
 export default function CustomerHomePage() {
-  const { user } = useAuth();
+  const { authState } = useAuth();
+  const user = authState.type === 'authenticated' ? authState.user : undefined;
+  const tenantId = user?.tenantId;
   const { data: trendingData, isFetching: trendingLoading } = useTrendingProducts(8);
-  const { data: allProductsData } = usePublicProducts();
+  const { data: allProductsData } = usePublicProducts(tenantId);
   const { items: cartItems, itemCount, subtotal } = useCart();
   const { data: wishlistData, isFetching: wishlistLoading } = useWishlist();
 

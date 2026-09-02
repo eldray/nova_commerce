@@ -4,7 +4,8 @@ import { useAuth } from '../helpers/useAuth';
 import styles from './dashboard.settings.store.module.css';
 
 export default function DashboardSettingsStore() {
-  const { user } = useAuth();
+  const { authState } = useAuth();
+  const user = authState.type === 'authenticated' ? authState.user : undefined;
   const [reason, setReason] = useState('');
   const [showUnpublishModal, setShowUnpublishModal] = useState(false);
   

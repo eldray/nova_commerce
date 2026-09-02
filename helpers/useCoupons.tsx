@@ -108,7 +108,7 @@ export function useCoupons(tenantId?: string) {
   // Validate coupon mutation for checkout
   const validateMutation = useMutation({
     mutationFn: async ({ code, subtotal }: { code: string; subtotal: number }) => {
-      return await apiClient('/api/coupons/validate', {
+      return await apiClient<{ valid: boolean; message?: string; coupon?: { code: string; discountType: 'percentage' | 'fixed_amount' | 'free_shipping'; discountValue: number; description?: string } }>('/api/coupons/validate', {
         method: 'POST',
         body: JSON.stringify({
           code,
