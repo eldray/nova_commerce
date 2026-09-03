@@ -1,5 +1,5 @@
 import superjson from "superjson";
-import { OutputType } from "./my_stores_GET.schema";
+import { OutputType } from "./my-stores_GET.schema";
 import { getServerUserSession } from "../../helpers/getServerUserSession";
 import { getTenantsForUser } from "../../helpers/tenantContext";
 

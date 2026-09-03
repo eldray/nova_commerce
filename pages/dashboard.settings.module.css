@@ -1,0 +1,73 @@
+.container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.description {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 32px;
+}
+
+.settingsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.settingCard {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.settingCard:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+  transform: translateY(-2px);
+}
+
+.cardIcon {
+  font-size: 32px;
+  margin-bottom: 16px;
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.cardDescription {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.arrow {
+  font-size: 20px;
+  color: #3b82f6;
+  margin-top: 16px;
+  align-self: flex-end;
+  transition: transform 0.2s ease;
+}
+
+.settingCard:hover .arrow {
+  transform: translateX(4px);
+}

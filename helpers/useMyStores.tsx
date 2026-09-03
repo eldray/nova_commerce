@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getMyStores } from "../endpoints/tenants/my_stores_GET.schema";
+import { getMyStores } from "../endpoints/tenants/my-stores_GET.schema";
 
 export const MY_STORES_QUERY_KEY = ["tenants", "my-stores"] as const;
 
