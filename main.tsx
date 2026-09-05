@@ -26,7 +26,12 @@ import DashboardProductsPage from "./pages/dashboard.products";
 import DashboardProductsNewPage from "./pages/dashboard.products.new";
 import DashboardSettingsPaymentsPage from "./pages/dashboard.settings.payments";
 import DashboardSettingsStorePage from "./pages/dashboard.settings.store";
+import DashboardSettingsPage from "./pages/dashboard.settings";
 import DashboardAnalyticsPage from "./pages/dashboard.analytics";
+import DashboardCouponsPage from "./pages/dashboard.coupons";
+import DashboardCouponsNewPage from "./pages/dashboard.coupons.new";
+import DashboardReviewsPage from "./pages/dashboard.reviews";
+import DashboardDeliveryPage from "./pages/dashboard.delivery";
 import ShopPage from "./pages/shop";
 import CategoriesPage from "./pages/categories";
 import AboutPage from "./pages/about";
@@ -84,7 +89,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/dashboard/products/new" element={<AuthenticatedRoute><DashboardLayout><DashboardProductsNewPage /></DashboardLayout></AuthenticatedRoute>} />
           <Route path="/dashboard/settings/payments" element={<AuthenticatedRoute><DashboardLayout><DashboardSettingsPaymentsPage /></DashboardLayout></AuthenticatedRoute>} />
           <Route path="/dashboard/settings/store" element={<AuthenticatedRoute><DashboardLayout><DashboardSettingsStorePage /></DashboardLayout></AuthenticatedRoute>} />
+          <Route path="/dashboard/settings" element={<AuthenticatedRoute><DashboardLayout><DashboardSettingsPage /></DashboardLayout></AuthenticatedRoute>} />
           <Route path="/dashboard/analytics" element={<AuthenticatedRoute><DashboardLayout><DashboardAnalyticsPage /></DashboardLayout></AuthenticatedRoute>} />
+          <Route path="/dashboard/coupons" element={<AuthenticatedRoute><DashboardLayout><DashboardCouponsPage /></DashboardLayout></AuthenticatedRoute>} />
+          <Route path="/dashboard/coupons/new" element={<AuthenticatedRoute><DashboardLayout><DashboardCouponsNewPage /></DashboardLayout></AuthenticatedRoute>} />
+          <Route path="/dashboard/reviews" element={<AuthenticatedRoute><DashboardLayout><DashboardReviewsPage /></DashboardLayout></AuthenticatedRoute>} />
+          <Route path="/dashboard/delivery" element={<AuthenticatedRoute><DashboardLayout><DashboardDeliveryPage /></DashboardLayout></AuthenticatedRoute>} />
 
           {/* Super admin routes */}
           <Route path="/admin" element={<SuperAdminRoute><AdminDashboardPage /></SuperAdminRoute>} />
